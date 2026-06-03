@@ -1,0 +1,112 @@
+<!--
+  ════════════════════════════════════════════════════════════════════════════
+  КОЛОКОЛЬЧИК УВЕДОМЛЕНИЙ ДЛЯ НАВБАРА
+  ════════════════════════════════════════════════════════════════════════════
+
+  Вставь этот блок в templates/base.html в секции "Right side",
+  ПЕРЕД блоком "Profile dropdown" (после переключателя языка RU/EN).
+
+  Работает только для авторизованных. Счётчик и список приходят
+  из context processor (notif_unread_count, notif_list).
+-->
+
+{% if user.is_authenticated %}
+<div class="relative">
+  <button onclick="toggleNotifications(event)"
+          class="relative p-2.5 text-slate-400 hover:text-[#0088CC] transition-colors bg-slate-50 rounded-xl border border-slate-100">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+      <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+    </svg>
+    {% if notif_unread_count > 0 %}
+    <span id="notif-badge"
+          class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white
+                 text-[10px] font-bold rounded-full flex items-center justify-center">
+      {{ notif_unread_count }}
+    </span>
+    {% endif %}
+  </button>
+
+  <!-- Dropdown -->
+  <div id="notif-dropdown"
+       class="absolute right-0 mt-2 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 hidden">
+    <div class="px-4 py-2.5 flex items-center justify-between border-b border-slate-100">
+      <p class="text-sm font-black text-slate-900">Уведомления</p>
+      {% if notif_unread_count > 0 %}
+      <span class="text-[10px] font-bold text-[#0088CC] uppercase tracking-widest">
+        {{ notif_unread_count }} новых
+      </span>
+      {% endif %}
+    </div>
+
+    <div class="max-h-80 overflow-y-auto">
+      {% if notif_list %}
+        {% for n in notif_list %}
+        <div class="px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0
+                    {% if not n.is_read %}bg-[#0088CC]/5{% endif %}">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                        {% if n.event_type == 'workout_completed' %}bg-emerald-50{% else %}bg-[#0088CC]/10{% endif %}">
+              {% if n.event_type == 'workout_completed' %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              {% else %}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/></svg>
+              {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-slate-700 leading-snug">{{ n.message }}</p>
+              {% if not n.is_read %}
+              <span class="inline-block w-1.5 h-1.5 bg-[#0088CC] rounded-full mt-1"></span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="px-4 py-10 text-center">
+          <div class="text-slate-300 flex justify-center mb-2">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            </svg>
+          </div>
+          <p class="text-sm text-slate-400 font-medium">Уведомлений пока нет</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+
+<!--
+  ════════════════════════════════════════════════════════════════════════════
+  JAVASCRIPT — добавь в блок extra_js или в base.html перед </body>
+  ════════════════════════════════════════════════════════════════════════════
+-->
+<script>
+  function toggleNotifications(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('notif-dropdown');
+    dropdown.classList.toggle('hidden');
+
+    // При открытии — отмечаем прочитанными
+    if (!dropdown.classList.contains('hidden')) {
+      fetch("{% url 'workout:notifications_read' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      }).then(() => {
+        // Убираем бейдж
+        const badge = document.getElementById('notif-badge');
+        if (badge) badge.remove();
+      });
+    }
+  }
+
+  // Закрытие по клику снаружи
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+    }
+  });
+</script>

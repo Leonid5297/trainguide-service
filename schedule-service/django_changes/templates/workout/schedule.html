@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Расписание тренировок — TrainGuide{% endblock %}
+
+{% block nav_generator %}active{% endblock %}
+{% block mob_generator %}text-[#0088CC]{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-12 px-6">
+
+  {# ── Заголовок ────────────────────────────────────────────────────────── #}
+  <div class="mb-10">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-[#0088CC]/10
+                text-[#0088CC] text-[10px] font-black uppercase tracking-widest
+                rounded-full mb-4">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8"  y1="2" x2="8"  y2="6"/>
+        <line x1="3"  y1="10" x2="21" y2="10"/>
+      </svg>
+      Расписание тренировок
+    </div>
+    <h1 class="text-[32px] font-black tracking-tight text-slate-900 mb-2">
+      Настрой расписание
+    </h1>
+    <p class="text-slate-500 font-medium">
+      Выбери дни и время — мы пришлём напоминание когда придёт время тренироваться.
+    </p>
+  </div>
+
+  {# ── Текущее расписание (если есть) ─────────────────────────────────── #}
+  {% if current_schedule %}
+  <div class="bg-white border rounded-2xl p-5 shadow-sm mb-6
+              {% if current_schedule.is_active %}border-[#0088CC]/20 bg-[#0088CC]/5{% else %}border-slate-100{% endif %}">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center
+                    {% if current_schedule.is_active %}bg-[#0088CC]{% else %}bg-slate-100{% endif %}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="{% if current_schedule.is_active %}white{% else %}#94A3B8{% endif %}"
+               stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <div class="font-black text-slate-900 text-sm">
+            {% if current_schedule.is_active %}Расписание активно{% else %}Расписание отключено{% endif %}
+          </div>
+          <div class="text-[11px] text-slate-400 font-medium mt-0.5">
+            Напоминание в {{ current_schedule.remind_time }}
+          </div>
+        </div>
+      </div>
+      {# Тогл включить/выключить #}
+      <button onclick="toggleSchedule()"
+              class="px-4 py-2 text-xs font-bold rounded-xl transition-all
+                     {% if current_schedule.is_active %}
+                     bg-slate-100 text-slate-500 hover:bg-slate-200
+                     {% else %}
+                     bg-[#0088CC] text-white hover:bg-[#0077bb]
+                     {% endif %}">
+        {% if current_schedule.is_active %}Отключить{% else %}Включить{% endif %}
+      </button>
+    </div>
+
+    {# Активные дни #}
+    {% if current_schedule.days %}
+    <div class="flex gap-2 mt-4 flex-wrap">
+      {% for day in days_order %}
+      <span class="px-3 py-1.5 rounded-xl text-[11px] font-bold
+                   {% if day in current_schedule.days %}
+                   bg-[#0088CC] text-white
+                   {% else %}
+                   bg-slate-100 text-slate-400
+                   {% endif %}">
+        {{ days_ru|get_item:day|default:day }}
+      </span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# ── Форма ────────────────────────────────────────────────────────────── #}
+  <div class="bg-white border border-slate-100 rounded-3xl shadow-sm p-8">
+    <h2 class="text-lg font-black text-slate-900 mb-6">
+      {% if current_schedule %}Изменить расписание{% else %}Создать расписание{% endif %}
+    </h2>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {# Дни недели #}
+      <div class="mb-8">
+        <label class="block text-[13px] font-bold text-slate-700 mb-4">
+          Дни тренировок
+        </label>
+        <div class="grid grid-cols-7 gap-2">
+          {% for day in days_order %}
+          <label class="flex flex-col items-center cursor-pointer group">
+            <input type="checkbox"
+                   name="days"
+                   value="{{ day }}"
+                   class="sr-only peer"
+                   {% if current_schedule and day in current_schedule.days %}checked{% endif %}>
+            <span class="w-10 h-10 rounded-xl flex items-center justify-center
+                         text-[11px] font-black transition-all
+                         border-2 border-slate-200 text-slate-400
+                         peer-checked:bg-[#0088CC] peer-checked:border-[#0088CC]
+                         peer-checked:text-white hover:border-[#0088CC]/50">
+              {{ days_ru|get_item:day|default:day }}
+            </span>
+          </label>
+          {% endfor %}
+        </div>
+        <p class="text-[11px] text-slate-400 font-medium mt-3">
+          Можно выбрать несколько дней
+        </p>
+      </div>
+
+      {# Время напоминания #}
+      <div class="mb-8">
+        <label class="block text-[13px] font-bold text-slate-700 mb-3"
+               for="remind_time">
+          Время напоминания
+        </label>
+        <input type="time"
+               name="remind_time"
+               id="remind_time"
+               value="{{ current_schedule.remind_time|default:'08:00' }}"
+               class="w-full p-3.5 bg-white border border-slate-200 rounded-xl
+                      text-sm font-medium outline-none transition-all
+                      focus:border-[#0088CC] focus:ring-2 focus:ring-[#0088CC]/20">
+        <p class="text-[11px] text-slate-400 font-medium mt-2">
+          Уведомление придёт в это время в выбранные дни
+        </p>
+      </div>
+
+      {# Активность #}
+      <div class="mb-8 flex items-center gap-3">
+        <input type="checkbox"
+               name="is_active"
+               id="is_active"
+               {% if not current_schedule or current_schedule.is_active %}checked{% endif %}
+               class="w-5 h-5 rounded accent-[#0088CC] cursor-pointer">
+        <label for="is_active" class="text-sm font-semibold text-slate-700 cursor-pointer">
+          Расписание активно
+        </label>
+      </div>
+
+      <button type="submit"
+              class="w-full py-4 bg-[#0088CC] text-white font-bold rounded-2xl
+                     text-sm hover:bg-[#0077bb] transition-all active:scale-[0.99]"
+              style="box-shadow: 0 8px 20px -5px rgba(0,136,204,0.3)">
+        {% if current_schedule %}Сохранить изменения{% else %}Создать расписание{% endif %}
+      </button>
+    </form>
+  </div>
+
+  {# ── Как это работает ─────────────────────────────────────────────────── #}
+  <div class="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+    <h3 class="text-sm font-black text-slate-900 mb-3">Как это работает</h3>
+    <ul class="space-y-2">
+      <li class="flex items-start gap-2 text-xs text-slate-500 font-medium">
+        <div class="w-1.5 h-1.5 rounded-full bg-[#0088CC] mt-1.5 flex-shrink-0"></div>
+        Выбери дни когда планируешь тренироваться
+      </li>
+      <li class="flex items-start gap-2 text-xs text-slate-500 font-medium">
+        <div class="w-1.5 h-1.5 rounded-full bg-[#0088CC] mt-1.5 flex-shrink-0"></div>
+        В указанное время в эти дни придёт уведомление-напоминание
+      </li>
+      <li class="flex items-start gap-2 text-xs text-slate-500 font-medium">
+        <div class="w-1.5 h-1.5 rounded-full bg-[#0088CC] mt-1.5 flex-shrink-0"></div>
+        Уведомления появятся в колокольчике в навбаре
+      </li>
+    </ul>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const TOGGLE_URL = "{% url 'workout:schedule_toggle' %}";
+  const CSRF       = "{{ csrf_token }}";
+
+  function toggleSchedule() {
+    fetch(TOGGLE_URL, {
+      method:  'POST',
+      headers: { 'X-CSRFToken': CSRF },
+    })
+    .then(r => r.json())
+    .then(() => window.location.reload())
+    .catch(() => alert('Ошибка. Попробуй снова.'));
+  }
+</script>
+{% endblock %}

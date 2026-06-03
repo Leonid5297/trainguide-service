@@ -1,0 +1,495 @@
+{
+  "info": {
+    "name": "TrainGuide — все микросервисы",
+    "_postman_id": "trainguide-all-services-2026",
+    "description": "Коллекция для демонстрации всех 6 микросервисов TrainGuide.\n\nПорты:\n- Django монолит  → 8000\n- workout-service  → 8001\n- analytics-service → 8002\n- notification-service → 8003\n- export-service   → 8004\n- advisor-service  → 8005\n- schedule-service → 8006",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE", "value": "http://localhost", "type": "string" },
+    { "key": "DJANGO", "value": "http://localhost:8000", "type": "string" },
+    { "key": "WORKOUT", "value": "http://localhost:8001", "type": "string" },
+    { "key": "ANALYTICS", "value": "http://localhost:8002", "type": "string" },
+    { "key": "NOTIF", "value": "http://localhost:8003", "type": "string" },
+    { "key": "EXPORT", "value": "http://localhost:8004", "type": "string" },
+    { "key": "ADVISOR", "value": "http://localhost:8005", "type": "string" },
+    { "key": "SCHEDULE", "value": "http://localhost:8006", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🏋️ workout-service (8001)",
+      "description": "Генерация тренировок через Claude API. Порт 8001.",
+      "item": [
+        {
+          "name": "GET / — статус сервиса",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{WORKOUT}}/", "host": ["{{WORKOUT}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "POST /generate/ — сгенерировать тренировку (синхронно)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{WORKOUT}}/generate/", "host": ["{{WORKOUT}}"], "path": ["generate", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_id\": 999,\n  \"user_id\": 1,\n  \"form_data\": {\n    \"goal\": \"похудение\",\n    \"level\": \"начинающий\",\n    \"days_per_week\": 3,\n    \"equipment\": \"нет оборудования\",\n    \"duration_minutes\": 40\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /job/{workout_id}/ — статус задания",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{WORKOUT}}/job/999/", "host": ["{{WORKOUT}}"], "path": ["job", "999", ""] }
+          }
+        },
+        {
+          "name": "GET /jobs/ — список всех заданий",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{WORKOUT}}/jobs/", "host": ["{{WORKOUT}}"], "path": ["jobs", ""] }
+          }
+        },
+        {
+          "name": "GET /jobs/?status=done — только готовые",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{WORKOUT}}/jobs/?status=done",
+              "host": ["{{WORKOUT}}"],
+              "path": ["jobs", ""],
+              "query": [{ "key": "status", "value": "done" }]
+            }
+          }
+        },
+        {
+          "name": "GET /queue/info/ — состояние Redis очередей",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{WORKOUT}}/queue/info/", "host": ["{{WORKOUT}}"], "path": ["queue", "info", ""] }
+          }
+        },
+        {
+          "name": "POST /queue/push/ — добавить задание в Redis вручную",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{WORKOUT}}/queue/push/", "host": ["{{WORKOUT}}"], "path": ["queue", "push", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_id\": 777,\n  \"user_id\": 2,\n  \"prompt\": \"Составь тренировку на 30 минут без оборудования для начинающего\"\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE /job/{workout_id}/ — удалить задание",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{WORKOUT}}/job/999/", "host": ["{{WORKOUT}}"], "path": ["job", "999", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📊 analytics-service (8002)",
+      "description": "Аналитика тренировок. Порт 8002.",
+      "item": [
+        {
+          "name": "GET / — статус сервиса",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ANALYTICS}}/", "host": ["{{ANALYTICS}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "POST /event/ — отправить событие (синхронно, для Postman)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{ANALYTICS}}/event/", "host": ["{{ANALYTICS}}"], "path": ["event", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"event_type\": \"workout_completed\",\n  \"workout_id\": 42,\n  \"metadata\": {\n    \"duration_minutes\": 45,\n    \"calories\": 300,\n    \"exercises_count\": 8\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /stats/{user_id}/ — статистика пользователя",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ANALYTICS}}/stats/1/", "host": ["{{ANALYTICS}}"], "path": ["stats", "1", ""] }
+          }
+        },
+        {
+          "name": "GET /stats/ — статистика всех пользователей",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ANALYTICS}}/stats/", "host": ["{{ANALYTICS}}"], "path": ["stats", ""] }
+          }
+        },
+        {
+          "name": "GET /events/{user_id}/ — история событий",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ANALYTICS}}/events/1/", "host": ["{{ANALYTICS}}"], "path": ["events", "1", ""] }
+          }
+        },
+        {
+          "name": "POST /queue/push/ — добавить событие в Redis",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{ANALYTICS}}/queue/push/", "host": ["{{ANALYTICS}}"], "path": ["queue", "push", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"event_type\": \"workout_started\",\n  \"workout_id\": 55,\n  \"metadata\": {}\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /queue/info/ — состояние Redis очереди",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ANALYTICS}}/queue/info/", "host": ["{{ANALYTICS}}"], "path": ["queue", "info", ""] }
+          }
+        },
+        {
+          "name": "DELETE /stats/{user_id}/ — сбросить статистику",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{ANALYTICS}}/stats/1/", "host": ["{{ANALYTICS}}"], "path": ["stats", "1", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔔 notification-service (8003)",
+      "description": "Уведомления пользователей. Порт 8003.",
+      "item": [
+        {
+          "name": "GET / — статус сервиса",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{NOTIF}}/", "host": ["{{NOTIF}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "POST /event/ — создать уведомление (для Postman)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{NOTIF}}/event/", "host": ["{{NOTIF}}"], "path": ["event", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"event_type\": \"workout_completed\",\n  \"workout_id\": 42,\n  \"message\": \"Тренировка успешно завершена! Отличная работа!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /notifications/{user_id}/ — список уведомлений",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{NOTIF}}/notifications/1/", "host": ["{{NOTIF}}"], "path": ["notifications", "1", ""] }
+          }
+        },
+        {
+          "name": "GET /notifications/{user_id}/unread-count/ — счётчик непрочитанных",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{NOTIF}}/notifications/1/unread-count/", "host": ["{{NOTIF}}"], "path": ["notifications", "1", "unread-count", ""] }
+          }
+        },
+        {
+          "name": "POST /notifications/{user_id}/read/ — отметить все прочитанными",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{NOTIF}}/notifications/1/read/", "host": ["{{NOTIF}}"], "path": ["notifications", "1", "read", ""] }
+          }
+        },
+        {
+          "name": "POST /notifications/{id}/read-one/ — прочитать одно",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{NOTIF}}/notifications/1/read-one/", "host": ["{{NOTIF}}"], "path": ["notifications", "1", "read-one", ""] }
+          }
+        },
+        {
+          "name": "POST /queue/push/ — добавить уведомление в Redis",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{NOTIF}}/queue/push/", "host": ["{{NOTIF}}"], "path": ["queue", "push", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"event_type\": \"workout_generated\",\n  \"workout_id\": 100,\n  \"message\": \"Ваша тренировка готова!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /queue/info/ — состояние Redis очереди",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{NOTIF}}/queue/info/", "host": ["{{NOTIF}}"], "path": ["queue", "info", ""] }
+          }
+        },
+        {
+          "name": "DELETE /notifications/{user_id}/ — удалить все уведомления",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{NOTIF}}/notifications/1/", "host": ["{{NOTIF}}"], "path": ["notifications", "1", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📄 export-service (8004)",
+      "description": "Экспорт тренировок в PDF. Порт 8004.",
+      "item": [
+        {
+          "name": "GET / — статус сервиса",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{EXPORT}}/", "host": ["{{EXPORT}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "POST /export/ — сгенерировать PDF (синхронно)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{EXPORT}}/export/", "host": ["{{EXPORT}}"], "path": ["export", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workout_id\": 4,\n  \"user_id\": 4,\n  \"result\": {\n    \"title\": \"Тренировка для похудения\",\n    \"goal\": \"похудение\",\n    \"level\": \"начинающий\",\n    \"days_per_week\": 3,\n    \"exercises\": [\n      { \"name\": \"Приседания\", \"sets\": 3, \"reps\": \"15\", \"rest\": \"60 сек\" },\n      { \"name\": \"Отжимания\", \"sets\": 3, \"reps\": \"10\", \"rest\": \"60 сек\" },\n      { \"name\": \"Планка\", \"sets\": 3, \"reps\": \"30 сек\", \"rest\": \"45 сек\" }\n    ],\n    \"notes\": \"Делайте разминку перед тренировкой 5-10 минут\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /export/{job_id}/status/ — статус задания",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{EXPORT}}/export/1/status/", "host": ["{{EXPORT}}"], "path": ["export", "1", "status", ""] }
+          }
+        },
+        {
+          "name": "GET /export/{job_id}/download/ — скачать PDF",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{EXPORT}}/export/1/download/", "host": ["{{EXPORT}}"], "path": ["export", "1", "download", ""] }
+          }
+        },
+        {
+          "name": "GET /jobs/ — список всех заданий",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{EXPORT}}/jobs/", "host": ["{{EXPORT}}"], "path": ["jobs", ""] }
+          }
+        },
+        {
+          "name": "GET /jobs/?status=done — только готовые",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{EXPORT}}/jobs/?status=done",
+              "host": ["{{EXPORT}}"],
+              "path": ["jobs", ""],
+              "query": [{ "key": "status", "value": "done" }]
+            }
+          }
+        },
+        {
+          "name": "GET /queue/info/ — состояние Redis очереди",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{EXPORT}}/queue/info/", "host": ["{{EXPORT}}"], "path": ["queue", "info", ""] }
+          }
+        },
+        {
+          "name": "DELETE /export/{job_id}/ — удалить задание и файл",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{EXPORT}}/export/1/", "host": ["{{EXPORT}}"], "path": ["export", "1", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🤖 advisor-service (8005)",
+      "description": "AI-советник по тренировкам на базе Claude. Порт 8005.",
+      "item": [
+        {
+          "name": "GET / — статус сервиса",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ADVISOR}}/", "host": ["{{ADVISOR}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "POST /ask/ — задать вопрос AI-советнику",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{ADVISOR}}/ask/", "host": ["{{ADVISOR}}"], "path": ["ask", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"question\": \"Как правильно делать приседания со штангой? На что обратить внимание?\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /ask/ — вопрос про питание",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{ADVISOR}}/ask/", "host": ["{{ADVISOR}}"], "path": ["ask", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"question\": \"Что лучше есть до тренировки за 1 час?\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /history/{user_id}/ — история диалогов",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ADVISOR}}/history/1/", "host": ["{{ADVISOR}}"], "path": ["history", "1", ""] }
+          }
+        },
+        {
+          "name": "GET /history/ — все диалоги всех пользователей",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{ADVISOR}}/history/", "host": ["{{ADVISOR}}"], "path": ["history", ""] }
+          }
+        },
+        {
+          "name": "DELETE /history/{user_id}/ — очистить историю",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{ADVISOR}}/history/1/", "host": ["{{ADVISOR}}"], "path": ["history", "1", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📅 schedule-service (8006)",
+      "description": "Расписание тренировок и напоминания. Порт 8006.",
+      "item": [
+        {
+          "name": "GET / — статус сервиса",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{SCHEDULE}}/", "host": ["{{SCHEDULE}}"], "path": [""] }
+          }
+        },
+        {
+          "name": "POST /schedule/ — создать расписание",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{SCHEDULE}}/schedule/", "host": ["{{SCHEDULE}}"], "path": ["schedule", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"days_of_week\": [1, 3, 5],\n  \"time_of_day\": \"09:00\",\n  \"is_active\": true\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /schedule/{user_id}/ — расписание пользователя",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{SCHEDULE}}/schedule/1/", "host": ["{{SCHEDULE}}"], "path": ["schedule", "1", ""] }
+          }
+        },
+        {
+          "name": "PATCH /schedule/{user_id}/toggle/ — включить/выключить",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{SCHEDULE}}/schedule/1/toggle/", "host": ["{{SCHEDULE}}"], "path": ["schedule", "1", "toggle", ""] }
+          }
+        },
+        {
+          "name": "GET /schedules/ — все расписания",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{SCHEDULE}}/schedules/", "host": ["{{SCHEDULE}}"], "path": ["schedules", ""] }
+          }
+        },
+        {
+          "name": "POST /remind/send-now/ — отправить напоминание немедленно",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{SCHEDULE}}/remind/send-now/?user_id=1",
+              "host": ["{{SCHEDULE}}"],
+              "path": ["remind", "send-now", ""],
+              "query": [{ "key": "user_id", "value": "1" }]
+            }
+          }
+        },
+        {
+          "name": "POST /scheduler/run-now/ — запустить проверку расписаний",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{SCHEDULE}}/scheduler/run-now/", "host": ["{{SCHEDULE}}"], "path": ["scheduler", "run-now", ""] }
+          }
+        },
+        {
+          "name": "GET /logs/{user_id}/ — лог напоминаний",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{SCHEDULE}}/logs/1/", "host": ["{{SCHEDULE}}"], "path": ["logs", "1", ""] }
+          }
+        },
+        {
+          "name": "DELETE /schedule/{user_id}/ — удалить расписание",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{SCHEDULE}}/schedule/1/", "host": ["{{SCHEDULE}}"], "path": ["schedule", "1", ""] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🌐 Swagger / Docs — быстрый доступ",
+      "description": "GET-запросы для открытия Swagger UI каждого сервиса в браузере.",
+      "item": [
+        {
+          "name": "workout-service /docs",
+          "request": { "method": "GET", "url": { "raw": "{{WORKOUT}}/docs", "host": ["{{WORKOUT}}"], "path": ["docs"] } }
+        },
+        {
+          "name": "analytics-service /docs",
+          "request": { "method": "GET", "url": { "raw": "{{ANALYTICS}}/docs", "host": ["{{ANALYTICS}}"], "path": ["docs"] } }
+        },
+        {
+          "name": "notification-service /docs",
+          "request": { "method": "GET", "url": { "raw": "{{NOTIF}}/docs", "host": ["{{NOTIF}}"], "path": ["docs"] } }
+        },
+        {
+          "name": "export-service /docs",
+          "request": { "method": "GET", "url": { "raw": "{{EXPORT}}/docs", "host": ["{{EXPORT}}"], "path": ["docs"] } }
+        },
+        {
+          "name": "advisor-service /docs",
+          "request": { "method": "GET", "url": { "raw": "{{ADVISOR}}/docs", "host": ["{{ADVISOR}}"], "path": ["docs"] } }
+        },
+        {
+          "name": "schedule-service /docs",
+          "request": { "method": "GET", "url": { "raw": "{{SCHEDULE}}/docs", "host": ["{{SCHEDULE}}"], "path": ["docs"] } }
+        }
+      ]
+    }
+
+  ]
+}

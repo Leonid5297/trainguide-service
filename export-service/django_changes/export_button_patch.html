@@ -1,0 +1,99 @@
+<!--
+  ════════════════════════════════════════════════════════════════════════════
+  Найди блок "Кнопки" внизу workout/templates/workout/detail.html
+  (там где кнопки "Создать новую тренировку" и "Мои тренировки")
+  и добавь третью кнопку:
+  ════════════════════════════════════════════════════════════════════════════
+-->
+
+{% if workout.status == 'done' and workout.result %}
+<button id="export-btn"
+        onclick="requestExport()"
+        class="flex-1 flex items-center justify-center gap-2 px-8 py-4
+               bg-white border border-slate-200 text-slate-700 font-bold
+               rounded-2xl text-sm hover:border-[#0088CC] hover:text-[#0088CC]
+               transition-all">
+  <svg id="export-icon" width="16" height="16" viewBox="0 0 24 24"
+       fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+    <polyline points="7 10 12 15 17 10"/>
+    <line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+  <span id="export-text">Скачать PDF</span>
+</button>
+{% endif %}
+
+
+<!--
+  ════════════════════════════════════════════════════════════════════════════
+  Добавь этот JavaScript в блок extra_js шаблона detail.html
+  ════════════════════════════════════════════════════════════════════════════
+-->
+<script>
+  const EXPORT_REQUEST_URL = "{% url 'workout:export_request' workout.pk %}";
+  const CSRF = "{{ csrf_token }}";
+  let exportPollInterval = null;
+
+  function requestExport() {
+    const btn  = document.getElementById('export-btn');
+    const icon = document.getElementById('export-icon');
+    const text = document.getElementById('export-text');
+
+    // Показываем спиннер
+    btn.disabled = true;
+    btn.classList.add('opacity-70');
+    text.textContent = 'Генерирую PDF...';
+    icon.innerHTML = '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>';
+    icon.classList.add('animate-spin');
+
+    fetch(EXPORT_REQUEST_URL, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.job_id) {
+        // Запускаем поллинг статуса
+        startExportPolling(data.job_id);
+      } else {
+        resetExportBtn('Ошибка — попробуй снова');
+      }
+    })
+    .catch(() => resetExportBtn('Ошибка — попробуй снова'));
+  }
+
+  function startExportPolling(jobId) {
+    exportPollInterval = setInterval(() => {
+      fetch(`/workout/export/status/${jobId}/`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'done') {
+            clearInterval(exportPollInterval);
+            // PDF готов — скачиваем
+            window.location.href = data.download_url;
+            setTimeout(() => resetExportBtn('Скачать PDF'), 2000);
+          } else if (data.status === 'error') {
+            clearInterval(exportPollInterval);
+            resetExportBtn('Ошибка генерации');
+          }
+        })
+        .catch(() => {});
+    }, 1500);
+  }
+
+  function resetExportBtn(label) {
+    const btn  = document.getElementById('export-btn');
+    const icon = document.getElementById('export-icon');
+    const text = document.getElementById('export-text');
+
+    btn.disabled = false;
+    btn.classList.remove('opacity-70');
+    text.textContent = label;
+    icon.classList.remove('animate-spin');
+    icon.innerHTML = `
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    `;
+  }
+</script>

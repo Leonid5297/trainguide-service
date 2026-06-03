@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}AI-советник — TrainGuide{% endblock %}
+
+{% block nav_generator %}active{% endblock %}
+{% block mob_generator %}text-[#0088CC]{% endblock %}
+
+{% block extra_head %}
+<style>
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg-animate { animation: fadeUp 0.3s ease both; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 1s linear infinite; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.3; transform: scale(0.7); }
+    50%       { opacity: 1;   transform: scale(1); }
+  }
+  .dot1 { animation: pulse-dot 1.2s ease-in-out infinite; }
+  .dot2 { animation: pulse-dot 1.2s ease-in-out 0.4s infinite; }
+  .dot3 { animation: pulse-dot 1.2s ease-in-out 0.8s infinite; }
+
+  #chat-messages::-webkit-scrollbar { width: 4px; }
+  #chat-messages::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-6">
+
+  {# ── Заголовок ────────────────────────────────────────────────────────── #}
+  <div class="mb-10">
+    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-[#0088CC]/10
+                text-[#0088CC] text-[10px] font-black uppercase tracking-widest
+                rounded-full mb-4">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5">
+        <path d="M12 2a10 10 0 1 0 10 10"/>
+        <path d="M12 8v4l3 3"/>
+      </svg>
+      AI-советник
+    </div>
+    <h1 class="text-[32px] font-black tracking-tight text-slate-900 mb-2">
+      Задай вопрос тренеру
+    </h1>
+    <p class="text-slate-500 font-medium">
+      Спроси про технику упражнений, питание, восстановление или составление программы.
+    </p>
+  </div>
+
+  {# ── Чат ─────────────────────────────────────────────────────────────── #}
+  <div class="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden">
+
+    {# Область сообщений #}
+    <div id="chat-messages"
+         class="h-[420px] overflow-y-auto p-6 space-y-4 flex flex-col">
+
+      {# Приветственное сообщение #}
+      <div class="flex items-start gap-3 msg-animate">
+        <div class="w-8 h-8 rounded-xl bg-[#0088CC] flex items-center justify-center flex-shrink-0">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="white" stroke-width="2.5">
+            <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+          </svg>
+        </div>
+        <div class="bg-slate-50 rounded-2xl rounded-tl-sm px-5 py-4 max-w-[85%]">
+          <p class="text-sm text-slate-700 leading-relaxed">
+            Привет! Я AI-советник TrainGuide. Помогу с вопросами о тренировках,
+            технике упражнений, питании и восстановлении. Что тебя интересует?
+          </p>
+        </div>
+      </div>
+
+      {# История диалогов #}
+      {% for item in history reversed %}
+        {# Вопрос пользователя #}
+        <div class="flex items-start gap-3 flex-row-reverse msg-animate">
+          <div class="w-8 h-8 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="#64748B" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="bg-[#0088CC] rounded-2xl rounded-tr-sm px-5 py-4 max-w-[85%]">
+            <p class="text-sm text-white leading-relaxed">{{ item.question }}</p>
+          </div>
+        </div>
+        {# Ответ советника #}
+        <div class="flex items-start gap-3 msg-animate">
+          <div class="w-8 h-8 rounded-xl bg-[#0088CC] flex items-center justify-center flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="white" stroke-width="2.5">
+              <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+            </svg>
+          </div>
+          <div class="bg-slate-50 rounded-2xl rounded-tl-sm px-5 py-4 max-w-[85%]">
+            <p class="text-sm text-slate-700 leading-relaxed">{{ item.answer }}</p>
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
+
+    {# Индикатор набора ответа (скрыт по умолчанию) #}
+    <div id="typing-indicator" class="hidden px-6 pb-2">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-xl bg-[#0088CC] flex items-center justify-center flex-shrink-0">
+          <svg class="spin" width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="white" stroke-width="2.5">
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+          </svg>
+        </div>
+        <div class="bg-slate-50 rounded-2xl rounded-tl-sm px-5 py-3.5 flex items-center gap-1.5">
+          <span class="w-2 h-2 bg-slate-400 rounded-full dot1"></span>
+          <span class="w-2 h-2 bg-slate-400 rounded-full dot2"></span>
+          <span class="w-2 h-2 bg-slate-400 rounded-full dot3"></span>
+        </div>
+      </div>
+    </div>
+
+    {# Поле ввода #}
+    <div class="border-t border-slate-100 p-4">
+      <div class="flex items-end gap-3">
+        <textarea id="question-input"
+                  rows="2"
+                  placeholder="Например: болит колено после приседаний, что делать?"
+                  class="flex-1 resize-none bg-slate-50 border border-slate-200
+                         rounded-2xl px-4 py-3 text-sm font-medium outline-none
+                         placeholder:text-slate-300 focus:border-[#0088CC]
+                         focus:ring-2 focus:ring-[#0088CC]/20 transition-all
+                         leading-relaxed max-h-32"></textarea>
+        <button id="send-btn"
+                onclick="sendQuestion()"
+                class="p-3.5 bg-[#0088CC] text-white rounded-2xl hover:bg-[#0077bb]
+                       transition-all active:scale-95 flex-shrink-0"
+                style="box-shadow: 0 4px 14px rgba(0,136,204,0.3)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-300 font-medium mt-2 ml-1">
+        Enter для новой строки · Нажми кнопку или Ctrl+Enter для отправки
+      </p>
+    </div>
+  </div>
+
+  {# ── Примеры вопросов ─────────────────────────────────────────────────── #}
+  <div class="mt-6">
+    <p class="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+      Попробуй спросить:
+    </p>
+    <div class="flex flex-wrap gap-2">
+      {% for q in "Как правильно делать становую тягу?|Сколько белка нужно в день?|Болит колено после приседаний|Как восстановиться после тренировки?|Какие упражнения на пресс самые эффективные?" | split:"|" %}
+      <button onclick="setQuestion(this.textContent)"
+              class="px-4 py-2 bg-white border border-slate-200 rounded-xl
+                     text-xs font-medium text-slate-500 hover:border-[#0088CC]
+                     hover:text-[#0088CC] transition-all">
+        {{ q }}
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const ASK_URL    = "{% url 'workout:advisor_ask' %}";
+  const CSRF_TOKEN = "{{ csrf_token }}";
+
+  const input    = document.getElementById('question-input');
+  const messages = document.getElementById('chat-messages');
+  const typing   = document.getElementById('typing-indicator');
+  const sendBtn  = document.getElementById('send-btn');
+
+  // Скроллим вниз при загрузке
+  messages.scrollTop = messages.scrollHeight;
+
+  // Ctrl+Enter для отправки
+  input.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') sendQuestion();
+  });
+
+  function setQuestion(text) {
+    input.value = text;
+    input.focus();
+  }
+
+  function appendMessage(text, isUser) {
+    const wrap = document.createElement('div');
+    wrap.className = 'flex items-start gap-3 msg-animate' + (isUser ? ' flex-row-reverse' : '');
+
+    const avatar = document.createElement('div');
+    avatar.className = 'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ' +
+      (isUser ? 'bg-slate-100' : 'bg-[#0088CC]');
+    avatar.innerHTML = isUser
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/></svg>';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'rounded-2xl px-5 py-4 max-w-[85%] text-sm leading-relaxed ' +
+      (isUser
+        ? 'bg-[#0088CC] text-white rounded-tr-sm'
+        : 'bg-slate-50 text-slate-700 rounded-tl-sm');
+    bubble.textContent = text;
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(bubble);
+    messages.appendChild(wrap);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function sendQuestion() {
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Показываем вопрос пользователя
+    appendMessage(question, true);
+    input.value = '';
+    sendBtn.disabled = true;
+
+    // Показываем индикатор набора
+    typing.classList.remove('hidden');
+    messages.scrollTop = messages.scrollHeight;
+
+    fetch(ASK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': CSRF_TOKEN,
+      },
+      body: JSON.stringify({ question }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      typing.classList.add('hidden');
+      sendBtn.disabled = false;
+
+      if (data.answer) {
+        appendMessage(data.answer, false);
+      } else {
+        appendMessage('Произошла ошибка. Попробуй ещё раз.', false);
+      }
+    })
+    .catch(() => {
+      typing.classList.add('hidden');
+      sendBtn.disabled = false;
+      appendMessage('Сервис временно недоступен. Попробуй позже.', false);
+    });
+  }
+</script>
+{% endblock %}
