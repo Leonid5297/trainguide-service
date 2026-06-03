@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}Статьи — TrainGuide{% endblock %}
+
+{% block nav_articles %}active{% endblock %}
+{% block mob_articles %}text-[#0088CC]{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-20 px-6">
+
+  {# ── Шапка раздела ──────────────────────────────────────────────────────── #}
+  <div class="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
+    <div class="max-w-2xl">
+      <div class="inline-block px-4 py-1.5 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] rounded-full mb-6">
+        Science &amp; Research
+      </div>
+      <h2 class="text-[40px] font-black mb-4 text-slate-900 tracking-tight">
+        {% if tag %}
+          Статьи по тегу «{{ tag.name }}»
+        {% elif query %}
+          Результаты поиска: «{{ query }}»
+        {% else %}
+          Статьи
+        {% endif %}
+      </h2>
+      <p class="text-slate-500 text-lg font-medium">
+        Разбираемся в физиологии, биомеханике и последних исследованиях,
+        чтобы ваши тренировки были максимально эффективными.
+      </p>
+    </div>
+
+    {# ── Форма поиска ────────────────────────────────────────────────────── #}
+    <div class="w-full md:w-80">
+      <form method="get" action="{% url 'articles:list' %}">
+        <div class="relative">
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+               width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          {{ form.query }}
+          {% if query %}
+            <a href="{% url 'articles:list' %}"
+               class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+               title="Сбросить поиск">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6"  y1="6" x2="18" y2="18"/>
+              </svg>
+            </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Активный тег — бейдж с кнопкой сброса ──────────────────────────────── #}
+  {% if tag %}
+    <div class="flex items-center gap-3 mb-8">
+      <span class="text-sm font-medium text-slate-500">Тег:</span>
+      <span class="flex items-center gap-2 px-4 py-1.5 bg-[#0088CC]/10 text-[#0088CC]
+                   text-[11px] font-black uppercase tracking-widest rounded-full">
+        {{ tag.name }}
+        <a href="{% url 'articles:list' %}"
+           class="hover:text-[#005f99] transition-colors" title="Убрать фильтр">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="3">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6"  y1="6" x2="18" y2="18"/>
+          </svg>
+        </a>
+      </span>
+    </div>
+  {% endif %}
+
+  {# ── Грид статей ─────────────────────────────────────────────────────────── #}
+  {% if articles %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {% for article in articles %}
+        <div class="article-card bg-white border border-slate-100 rounded-[24px]
+                    shadow-sm overflow-hidden flex flex-col group">
+
+          {# Обложка #}
+          <a href="{{ article.get_absolute_url }}"
+             class="aspect-[4/3] overflow-hidden relative block">
+            {% if article.category %}
+              <div class="absolute top-4 left-4 z-10">
+                <span class="px-3 py-1 text-[9px] font-black uppercase tracking-widest
+                rounded-full shadow-sm" style="background-color: rgba(255,255,255,0.92); color: #0F172A;">
+                  {{ article.category }}
+                </span>
+              </div>
+            {% endif %}
+            {% if article.cover %}
+              <img src="{{ article.cover }}"
+                   alt="{{ article.title }}"
+                   class="w-full h-full object-cover transition-transform
+                          duration-700 group-hover:scale-110" />
+            {% else %}
+              <div class="w-full h-full bg-slate-100 flex items-center
+                          justify-center text-slate-300">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
+            {% endif %}
+          </a>
+
+          {# Контент карточки #}
+          <div class="p-6 flex-1 flex flex-col">
+
+            {# Мета-данные #}
+            <div class="flex items-center gap-2 text-[10px] text-slate-400
+                        mb-4 font-bold uppercase tracking-tighter">
+              <span>{{ article.publish|date:"d E, Y" }}</span>
+              <span class="w-1 h-1 bg-slate-200 rounded-full inline-block"></span>
+              <span>{{ article.author.get_full_name|default:article.author.username }}</span>
+            </div>
+
+            {# Заголовок #}
+            <h3 class="text-lg font-bold mb-3 group-hover:text-[#0088CC]
+                       transition-colors leading-tight text-slate-900 flex-1">
+              <a href="{{ article.get_absolute_url }}">{{ article.title }}</a>
+            </h3>
+            <p class="text-slate-400 text-xs leading-relaxed mb-4 line-clamp-3">
+              {{ article.get_excerpt }}
+            </p>
+
+            {# Теги #}
+            {% with tags=article.tags.all %}
+              {% if tags %}
+                <div class="flex flex-wrap gap-1.5 mb-4">
+                  {% for tag in tags %}
+                    <a href="{% url 'articles:list_by_tag' tag.slug %}"
+                       class="px-2.5 py-1 bg-slate-50 hover:bg-[#0088CC]/10
+                              text-slate-400 hover:text-[#0088CC] text-[9px]
+                              font-bold uppercase tracking-widest rounded-full
+                              transition-colors">
+                      {{ tag.name }}
+                    </a>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+
+            {# Ссылка «Читать» #}
+            <div class="flex items-center gap-2 text-[#0088CC] text-[11px]
+                        font-black uppercase tracking-widest pt-4
+                        border-t border-slate-50 mt-auto">
+              <a href="{{ article.get_absolute_url }}"
+                 class="flex items-center gap-2 hover:gap-3 transition-all">
+                Читать
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5">
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                  <polyline points="12 5 19 12 12 19"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {# ── Пагинация ─────────────────────────────────────────────────────────── #}
+    {% if page_obj.has_other_pages %}
+      <div class="flex items-center justify-center gap-2 mt-16">
+
+        {# Предыдущая страница #}
+        {% if page_obj.has_previous %}
+          <a href="?{% if query %}query={{ query }}&{% endif %}page={{ page_obj.previous_page_number }}"
+             class="p-3 bg-white border border-slate-200 rounded-xl text-slate-400
+                    hover:text-[#0088CC] hover:border-[#0088CC] transition-all">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+          </a>
+        {% endif %}
+
+        {# Номера страниц #}
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <span class="w-10 h-10 flex items-center justify-center bg-[#0088CC]
+                         text-white text-sm font-bold rounded-xl
+                         shadow-lg shadow-[#0088CC]/20">
+              {{ num }}
+            </span>
+          {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?{% if query %}query={{ query }}&{% endif %}page={{ num }}"
+               class="w-10 h-10 flex items-center justify-center bg-white
+                      border border-slate-200 text-slate-500 text-sm font-bold
+                      rounded-xl hover:border-[#0088CC] hover:text-[#0088CC]
+                      transition-all">
+              {{ num }}
+            </a>
+          {% endif %}
+        {% endfor %}
+
+        {# Следующая страница #}
+        {% if page_obj.has_next %}
+          <a href="?{% if query %}query={{ query }}&{% endif %}page={{ page_obj.next_page_number }}"
+             class="p-3 bg-white border border-slate-200 rounded-xl text-slate-400
+                    hover:text-[#0088CC] hover:border-[#0088CC] transition-all">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </a>
+        {% endif %}
+      </div>
+
+      <p class="text-center text-[11px] text-slate-400 font-medium mt-4">
+        Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+        &nbsp;·&nbsp; {{ page_obj.paginator.count }} статей
+      </p>
+    {% endif %}
+
+  {% else %}
+    {# ── Пустое состояние ─────────────────────────────────────────────────── #}
+    <div class="text-center py-24 bg-slate-50 rounded-[40px]
+                border border-dashed border-slate-200">
+      <div class="text-slate-300 mb-6 flex justify-center">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="1">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <h3 class="text-2xl font-black text-slate-900 mb-2">Ничего не найдено</h3>
+      <p class="text-slate-500 font-medium mb-8">
+        {% if query %}
+          По запросу «{{ query }}» статей не найдено.
+        {% elif tag %}
+          Статей с тегом «{{ tag.name }}» пока нет.
+        {% else %}
+          Статьи ещё не опубликованы.
+        {% endif %}
+      </p>
+      <a href="{% url 'articles:list' %}"
+         class="inline-flex items-center gap-2 px-8 py-3 bg-white border
+                border-slate-200 rounded-xl text-sm font-bold text-slate-900
+                hover:bg-slate-50 transition-all shadow-sm">
+        Все статьи
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+
+{% block extra_css %}
+<style>
+  .article-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+  .article-card:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+</style>
+{% endblock %}
+
+{% endblock %}

@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+
+
+{% block title %}{{ article.title }} — TrainGuide{% endblock %}
+
+{% block nav_articles %}active{% endblock %}
+{% block mob_articles %}text-[#0088CC]{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-20 px-6">
+
+  {# ── Кнопка «Назад» ─────────────────────────────────────────────────────── #}
+  <a href="{% url 'articles:list' %}"
+     class="inline-flex items-center gap-2 text-slate-400 hover:text-[#0088CC]
+            transition-colors mb-10 font-bold uppercase tracking-widest text-[10px]">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2">
+      <polyline points="19 12 5 12"/>
+      <polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Назад к статьям
+  </a>
+
+  <div class="space-y-10">
+
+    {# ── Обложка ─────────────────────────────────────────────────────────── #}
+    {% if article.cover %}
+      <div class="aspect-video rounded-[40px] overflow-hidden shadow-2xl">
+        <img src="{{ article.cover }}"
+             alt="{{ article.title }}"
+             class="w-full h-full object-cover" />
+      </div>
+    {% endif %}
+
+    {# ── Мета-данные ─────────────────────────────────────────────────────── #}
+    <div class="space-y-6">
+
+      <div class="flex flex-wrap items-center gap-3">
+        {# Категория #}
+        {% if article.category %}
+          <span class="px-4 py-1.5 bg-[#0088CC]/10 text-[#0088CC] text-[10px]
+                       font-black uppercase tracking-widest rounded-full">
+            {{ article.category }}
+          </span>
+        {% endif %}
+
+        {# Дата и автор #}
+        <div class="flex items-center gap-2 text-[10px] text-slate-400
+                    font-bold uppercase tracking-tighter">
+          <span>{{ article.publish|date:"d E, Y" }}</span>
+          <span class="w-1 h-1 bg-slate-200 rounded-full inline-block"></span>
+          <span>{{ article.author.get_full_name|default:article.author.username }}</span>
+        </div>
+      </div>
+
+      {# ── Заголовок ────────────────────────────────────────────────────── #}
+      <h1 class="text-[40px] md:text-[48px] font-black text-slate-900
+                 leading-tight tracking-tight">
+        {{ article.title }}
+      </h1>
+
+      {# ── Теги ─────────────────────────────────────────────────────────── #}
+      {% with tags=article.tags.all %}
+        {% if tags %}
+          <div class="flex flex-wrap gap-2">
+            {% for tag in tags %}
+              <a href="{% url 'articles:list_by_tag' tag.slug %}"
+                 class="px-3.5 py-1.5 bg-slate-50 hover:bg-[#0088CC]/10
+                        text-slate-500 hover:text-[#0088CC] text-[10px]
+                        font-bold uppercase tracking-widest rounded-full
+                        border border-slate-100 hover:border-[#0088CC]/20
+                        transition-all">
+                # {{ tag.name }}
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {# ── Тело статьи ──────────────────────────────────────────────────── #}
+      <div class="pt-8 border-t border-slate-100">
+        <div class="prose-article space-y-6 text-slate-600 leading-relaxed">
+          {{ article.body_as_html|safe }}
+        </div>
+      </div>
+
+    </div>
+
+    {# ── Блок «Поделиться» / навигация ───────────────────────────────────── #}
+    <div class="flex flex-col sm:flex-row items-start sm:items-center
+                justify-between gap-6 pt-10 border-t border-slate-100">
+
+      {# Теги ещё раз (нижняя позиция) #}
+      {% with tags=article.tags.all %}
+        {% if tags %}
+          <div class="flex flex-wrap gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-widest
+                         text-slate-400 mr-1 self-center">Теги:</span>
+            {% for tag in tags %}
+              <a href="{% url 'articles:list_by_tag' tag.slug %}"
+                 class="px-3 py-1 bg-slate-50 hover:bg-[#0088CC]/10
+                        text-slate-400 hover:text-[#0088CC] text-[9px]
+                        font-bold uppercase tracking-widest rounded-full
+                        transition-all">
+                {{ tag.name }}
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {# Кнопка назад #}
+      <a href="{% url 'articles:list' %}"
+         class="flex items-center gap-2 px-6 py-3 bg-white border
+                border-slate-200 rounded-xl text-sm font-bold text-slate-600
+                hover:border-[#0088CC] hover:text-[#0088CC] transition-all
+                shadow-sm whitespace-nowrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2">
+          <polyline points="19 12 5 12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Все статьи
+      </a>
+    </div>
+
+  </div>
+</div>
+
+{% block extra_css %}
+<style>
+  .prose-article p   { font-size: 1rem; line-height: 1.8; color: #64748B; }
+  .prose-article h2,
+  .prose-article h3  { font-weight: 900; color: #0F172A; margin-top: 2.5rem; margin-bottom: 1rem; }
+  .prose-article h2  { font-size: 1.75rem; }
+  .prose-article h3  { font-size: 1.25rem; }
+  .prose-article ul,
+  .prose-article ol  { padding-left: 1.5rem; }
+  .prose-article li  { margin-bottom: 0.5rem; color: #64748B; }
+  .prose-article strong { color: #0F172A; font-weight: 700; }
+
+  html.dark .prose-article p,
+  html.dark .prose-article li  { color: #94A3B8 !important; }
+  html.dark .prose-article h2,
+  html.dark .prose-article h3,
+  html.dark .prose-article strong { color: #FFFFFF !important; }
+</style>
+{% endblock %}
+
+{% endblock %}

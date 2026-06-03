@@ -1,0 +1,426 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru" id="html-root">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}TrainGuide{% endblock %}</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}" />
+  <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/dark-theme.css' %}" />
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="min-h-screen bg-[#FDFDFD]">
+
+<!-- ===== NAVBAR ===== -->
+<nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 py-4">
+  <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+
+    <!-- Logo + Desktop Nav -->
+    <div class="flex items-center gap-12">
+      <!--home-->
+      <a href="{% url 'home' %}" class="text-2xl font-black text-[#0088CC] tracking-tighter select-none">
+        TrainGuide
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-[13px] font-semibold uppercase tracking-wider text-slate-500">
+        <a href="{% url 'workout:generate' %}" 
+           class="nav-link py-1 transition-colors hover:text-[#0088CC] {% block nav_generator %}{% endblock %}">
+          Генератор тренировок
+        </a>
+        {% comment %} <a href="#"
+           class="nav-link py-1 transition-colors hover:text-[#0088CC] {% block nav_quick %}{% endblock %}">
+          Быстрая тренировка
+        </a> {% endcomment %}
+        <a href="{% url 'workout:advisor' %}"
+          class="nav-link py-1 transition-colors hover:text-[#0088CC] {% block nav_advisor %}{% endblock %}">
+          AI-советник
+        </a>
+        <a href="{% url 'workout:schedule' %}"
+          class="nav-link py-1 transition-colors hover:text-[#0088CC] {% block nav_schedule %}{% endblock %}">
+          Расписание
+        </a>
+        <a href="{% url 'articles:list' %}"
+           class="nav-link py-1 transition-colors hover:text-[#0088CC] {% block nav_articles %}{% endblock %}">
+          Статьи
+        </a>
+        <a href="{% url 'home' %}"
+           class="nav-link py-1 transition-colors hover:text-[#0088CC] {% block nav_about %}{% endblock %}">
+          О проекте
+        </a>
+      </div>
+    </div>
+
+    <!-- Right side -->
+    <div class="flex items-center gap-4">
+
+      <!-- Language switcher -->
+      <button class="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors">
+        RU <span class="w-1 h-1 bg-slate-300 rounded-full inline-block"></span> EN
+      </button>
+
+      {% if user.is_authenticated %}
+        <div class="relative">
+          <button onclick="toggleNotifications(event)"
+                  class="relative p-2.5 text-slate-400 hover:text-[#0088CC] transition-colors bg-slate-50 rounded-xl border border-slate-100">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            {% if notif_unread_count > 0 %}
+            <span id="notif-badge"
+                  class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white
+                        text-[10px] font-bold rounded-full flex items-center justify-center">
+              {{ notif_unread_count }}
+            </span>
+            {% endif %}
+          </button>
+
+          <!-- Dropdown -->
+          <div id="notif-dropdown"
+              class="absolute right-0 mt-2 w-80 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 hidden">
+            <div class="px-4 py-2.5 flex items-center justify-between border-b border-slate-100">
+              <p class="text-sm font-black text-slate-900">Уведомления</p>
+              {% if notif_unread_count > 0 %}
+              <span class="text-[10px] font-bold text-[#0088CC] uppercase tracking-widest">
+                {{ notif_unread_count }} новых
+              </span>
+              {% endif %}
+            </div>
+
+            <div class="max-h-80 overflow-y-auto">
+              {% if notif_list %}
+                {% for n in notif_list %}
+                <div class="px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0
+                            {% if not n.is_read %}bg-[#0088CC]/5{% endif %}">
+                  <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0
+                                {% if n.event_type == 'workout_completed' %}bg-emerald-50{% else %}bg-[#0088CC]/10{% endif %}">
+                      {% if n.event_type == 'workout_completed' %}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                      {% else %}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2"><path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/></svg>
+                      {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm text-slate-700 leading-snug">{{ n.message }}</p>
+                      {% if not n.is_read %}
+                      <span class="inline-block w-1.5 h-1.5 bg-[#0088CC] rounded-full mt-1"></span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              {% else %}
+                <div class="px-4 py-10 text-center">
+                  <div class="text-slate-300 flex justify-center mb-2">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    </svg>
+                  </div>
+                  <p class="text-sm text-slate-400 font-medium">Уведомлений пока нет</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      <!-- Profile dropdown -->
+      <div class="relative">
+        <button onclick="toggleProfile(event)"
+                class="p-2.5 text-slate-400 hover:text-[#0088CC] transition-colors bg-slate-50 rounded-xl border border-slate-100">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </button>
+
+        <div id="profile-dropdown"
+             class="absolute right-0 mt-2 w-56 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50">
+          {% if user.is_authenticated %}
+            <div class="px-4 py-2.5">
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest truncate">{{ user.username }}</p>
+            </div>
+            <div class="h-px bg-slate-100 my-1"></div>
+            <a href="{% url 'profile' %}"
+               class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+              Мой профиль
+            </a>
+            <!--my_workouts-->
+            <a href="{% url 'workout:my_workouts' %}"
+               class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3">
+              <svg width="15" height="15" viewBox="0 0 120 70" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2"  y="22" width="14" height="26" rx="3" fill="currentColor" stroke="none"/>
+                <rect x="16" y="16" width="10" height="38" rx="3" fill="currentColor" stroke="none"/>
+                <rect x="26" y="30" width="68" height="10" rx="2" fill="currentColor" stroke="none"/>
+                <rect x="94" y="16" width="10" height="38" rx="3" fill="currentColor" stroke="none"/>
+                <rect x="104" y="22" width="14" height="26" rx="3" fill="currentColor" stroke="none"/>
+                <circle cx="60" cy="35" r="20" stroke="currentColor" stroke-width="5"/>
+              </svg>
+              Мои тренировки
+            </a>
+            <!--password_change -->
+            <a href="{% url 'password_change' %}"
+               class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Сменить пароль
+            </a>
+            <div class="h-px bg-slate-100 my-1"></div>
+          {% else %}
+            <a href="{% url 'login' %}" 
+               class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                <polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+              </svg>
+              Войти 
+            </a>
+            <!--register-->
+            <a href="{% url 'register' %}" 
+               class="w-full text-left px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+              </svg>
+              Регистрация
+            </a>
+            <div class="h-px bg-slate-100 my-1"></div>
+          {% endif %}
+
+          <!-- Theme toggle row -->
+          <div class="px-4 py-2.5 flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-700 flex items-center gap-3">
+              <svg id="dd-theme-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+              <span id="dd-theme-label">Светлая тема</span>
+            </span>
+            <button id="theme-toggle" onclick="toggleTheme()" title="Переключить тему">
+              <span class="icon-sun">☀️</span>
+              <span class="icon-moon">🌙</span>
+            </button>
+          </div>
+
+          {% if user.is_authenticated %}
+            <div class="h-px bg-slate-100 my-1"></div>
+            <!--logout-->
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit"
+                      class="w-full text-left px-4 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors flex items-center gap-3">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Выйти
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Hamburger (mobile) -->
+      <button onclick="toggleMobileMenu()" id="hamburger-btn"
+              class="md:hidden p-2.5 text-slate-400 hover:text-[#0088CC] transition-colors bg-slate-50 rounded-xl border border-slate-100">
+        <svg id="icon-menu" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+        <svg id="icon-x" class="hidden" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="md:hidden bg-white border-t border-slate-50">
+    <div class="px-6 py-6 space-y-4">
+      <!-- Nav links -->
+       <!--home-->
+      <a href="{% url 'workout:generate' %}" class="block py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors {% block mob_generator %}{% endblock %}">Генератор тренировок</a>
+      <!--<a href="{% url 'workout:generate' %}" class="block py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors {% block mob_quick %}{% endblock %}">Быстрая тренировка</a>-->
+      <a href="{% url 'workout:advisor' %}"class="block py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors {% block mob_advisor %}{% endblock %}">AI-советник</a>
+      <a href="{% url 'workout:schedule' %}"class="block py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors {% block mob_schedule %}{% endblock %}">Расписание</a>
+      <a href="{% url 'articles:list' %}" class="block py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors {% block mob_articles %}{% endblock %}">Статьи</a>
+      <a href="{% url 'home' %}" class="block py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors {% block mob_about %}{% endblock %}">О проекте</a>
+
+      <!-- Divider -->
+      <div class="h-px bg-slate-100"></div>
+
+      <!-- Auth links (mobile) -->
+      {% if user.is_authenticated %}
+        <div class="py-1 text-[11px] font-bold text-slate-400 uppercase tracking-widest truncate">{{ user.username }}</div>
+        <!--logout-->
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="flex items-center gap-2 py-2 text-sm font-bold uppercase tracking-widest text-red-500 transition-colors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            Выйти
+          </button>
+        </form>
+      {% else %}
+      <!--login-->
+        <a href="{% url 'login' %}" class="flex items-center gap-2 py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+            <polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+          </svg>
+          Войти
+        </a>
+        <!--register-->
+        <a href="" class="flex items-center gap-2 py-2 text-sm font-bold uppercase tracking-widest text-slate-500 hover:text-[#0088CC] transition-colors">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+          </svg>
+          Регистрация
+        </a>
+      {% endif %}
+
+      <!-- Divider -->
+      <div class="h-px bg-slate-100"></div>
+
+      <!-- Bottom row: language + theme toggle -->
+      <div class="flex items-center justify-between pt-1">
+        <div class="flex items-center gap-4">
+          <button class="text-xs font-bold text-[#0088CC]">RU</button>
+          <span class="w-1 h-1 bg-slate-200 rounded-full inline-block"></span>
+          <button class="text-xs font-bold text-slate-400">EN</button>
+        </div>
+        <!-- Theme toggle (mobile) -->
+        <div class="flex items-center gap-3">
+          <span id="mob-theme-label" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Тема</span>
+          <button id="theme-toggle-mob" onclick="toggleTheme()" title="Переключить тему"
+                  class="relative w-11 h-6 bg-slate-200 rounded-full border-none outline-none cursor-pointer transition-colors duration-300 flex-shrink-0"
+                  style="background:#E2E8F0;">
+            <span class="mob-icon-sun absolute top-1/2 -translate-y-1/2 left-[5px] text-[11px] pointer-events-none transition-opacity duration-200">☀️</span>
+            <span class="mob-icon-moon absolute top-1/2 -translate-y-1/2 right-[5px] text-[11px] pointer-events-none transition-opacity duration-200 opacity-0">🌙</span>
+            <span class="mob-thumb absolute left-[3px] top-[3px] w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-300"
+                  style="box-shadow:0 1px 4px rgba(0,0,0,0.2);"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== FLASH MESSAGES ===== -->
+{% block flash_messages %}
+{% if messages %}
+  <div class="max-w-7xl mx-auto px-6 pt-4 space-y-2">
+    {% for message in messages %}
+      <div class="flex items-center gap-3 px-5 py-3.5 rounded-2xl text-sm font-semibold
+        {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-100
+        {% elif message.tags == 'error' %}bg-red-50 text-red-600 border border-red-100
+        {% else %}bg-[#0088CC]/10 text-[#0088CC] border border-[#0088CC]/20{% endif %}">
+        <span>{{ message }}</span>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock flash_messages %}
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="page-animate">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="bg-white border-t border-slate-100 py-20 mt-20">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+      <div class="col-span-1 md:col-span-2">
+        <div class="text-2xl font-black text-[#0088CC] tracking-tighter mb-6">TrainGuide</div>
+        <p class="text-slate-400 text-sm max-w-xs leading-relaxed font-medium">
+          Персональный ИИ-тренер в вашем кармане. Мы объединяем науку и технологии для достижения ваших целей.
+        </p>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6">Продукт</h4>
+        <ul class="space-y-4 text-sm text-slate-500 font-medium">
+          <!--home-->
+          <li><a href="{% url 'workout:generate' %}" class="hover:text-[#0088CC] transition-colors">Генератор тренировок</a></li>
+          <li><a href="#" class="hover:text-[#0088CC] transition-colors">Быстрая тренировка</a></li>
+          <li><a href="{% url 'articles:list' %}" class="hover:text-[#0088CC] transition-colors">Статьи</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-xs font-bold uppercase tracking-widest text-slate-900 mb-6">Компания</h4>
+        <ul class="space-y-4 text-sm text-slate-500 font-medium">
+          <li><a href="#" class="hover:text-[#0088CC] transition-colors">О нас</a></li>
+          <li><a href="#" class="hover:text-[#0088CC] transition-colors">Контакты</a></li>
+          <li><a href="#" class="hover:text-[#0088CC] transition-colors">Поддержка</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+        © 2026 TrainGuide. Все права защищены.
+      </div>
+      <div class="flex gap-8 text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+        <a href="#" class="hover:text-slate-900 transition-colors">Privacy</a>
+        <a href="#" class="hover:text-slate-900 transition-colors">Terms</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== JAVASCRIPT ===== -->
+<script src="{% static 'js/base.js' %}"></script>
+<script>
+  function toggleNotifications(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('notif-dropdown');
+    dropdown.classList.toggle('hidden');
+
+    // При открытии — отмечаем прочитанными
+    if (!dropdown.classList.contains('hidden')) {
+      fetch("{% url 'workout:notifications_read' %}", {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+      }).then(() => {
+        // Убираем бейдж
+        const badge = document.getElementById('notif-badge');
+        if (badge) badge.remove();
+      });
+    }
+  }
+
+  // Закрытие по клику снаружи
+  document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      dropdown.classList.add('hidden');
+    }
+  });
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

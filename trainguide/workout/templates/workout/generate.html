@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+
+{% block title %}Генератор тренировок — TrainGuide{% endblock %}
+
+{% block nav_generator %}active{% endblock %}
+{% block mob_generator %}text-[#0088CC]{% endblock %}
+
+{% block extra_head %}
+<style>
+  .step-content { display: none; }
+  .step-content.active { display: block; animation: fadeSlideIn 0.35s cubic-bezier(0.23,1,0.32,1) both; }
+  @keyframes fadeSlideIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  #step-progress { transition: width 0.6s ease; }
+
+  /* Кастомный чекбокс */
+  .custom-checkbox { appearance: none; width: 20px; height: 20px; border-radius: 6px; border: 2px solid #E2E8F0; cursor: pointer; transition: all 0.2s; flex-shrink: 0; }
+  .custom-checkbox:checked { background-color: #0088CC; border-color: #0088CC; }
+  .checkbox-wrap { position: relative; display: flex; align-items: center; }
+  .checkbox-check { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); pointer-events: none; opacity: 0; transition: opacity 0.15s; }
+  .custom-checkbox:checked ~ .checkbox-check { opacity: 1; }
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+  select { background-image: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-6">
+
+  <div class="mb-12">
+    <h1 class="text-[32px] font-black mb-4 tracking-tight text-slate-900">Составьте свой план тренировок</h1>
+    <p class="text-slate-500 text-base leading-relaxed font-medium">Давайте начнем с индивидуального плана тренировок, который будет соответствовать вашим целям и уровню физической подготовки.</p>
+  </div>
+
+  <div class="bg-white border border-slate-100 rounded-3xl shadow-sm p-8 md:p-12">
+
+    {# ── Индикатор шагов ─────────────────────────────────────────────────── #}
+    <div class="flex items-center justify-between mb-16 relative px-2">
+      <div class="absolute top-1/2 left-0 right-0 h-[1px] bg-slate-100"></div>
+      <div id="step-progress" class="absolute top-1/2 left-0 h-[1px] bg-[#0088CC]" style="width:0%"></div>
+
+      <div class="relative z-10" id="dot-1">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] bg-[#0088CC] text-white" style="box-shadow:0 4px 14px rgba(0,136,204,0.3)">1</div>
+        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-[#0088CC]">Цели</div>
+      </div>
+      <div class="relative z-10" id="dot-2">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] bg-white border border-slate-200 text-slate-400">2</div>
+        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-slate-300">Детали</div>
+      </div>
+      <div class="relative z-10" id="dot-3">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] bg-white border border-slate-200 text-slate-400">3</div>
+        <div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-slate-300">Профиль</div>
+      </div>
+    </div>
+
+    <form method="post" id="workout-form">
+      {% csrf_token %}
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# ШАГ 1 — Цели                                                        #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      <div id="step-1" class="step-content active space-y-6">
+
+        {% for field in form %}
+          {% if field.name == 'experience' or field.name == 'frequency' or field.name == 'duration' or field.name == 'location' or field.name == 'equipment' or field.name == 'goal' %}
+          <div class="space-y-2">
+            <label class="block text-[13px] font-bold text-slate-700">{{ field.label }}</label>
+            <div class="relative">
+              {{ field }}
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+            {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors|join:', ' }}</p>{% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+
+        <div class="flex justify-end pt-8 border-t border-slate-100">
+          <button type="button" onclick="nextStep()" class="bg-[#0088CC] text-white font-bold py-3 px-10 rounded-xl text-sm active:scale-95 transition-all" style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">Далее</button>
+        </div>
+      </div>
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# ШАГ 2 — Детали                                                      #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      <div id="step-2" class="step-content space-y-6">
+
+        {# Виды нагрузки #}
+        <div class="space-y-2">
+          <label class="block text-[13px] font-bold text-slate-700">{{ form.workout_types.label }}</label>
+          <div class="relative border border-slate-200 rounded-xl bg-white overflow-hidden">
+            <div class="max-h-48 overflow-y-auto p-4 pr-12 space-y-3 custom-scrollbar">
+              {% for choice in form.workout_types %}
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div class="checkbox-wrap">
+                    <input type="checkbox" name="{{ form.workout_types.html_name }}" value="{{ choice.data.value }}"
+                           class="custom-checkbox"
+                           {% if choice.data.value in form.workout_types.value %}checked{% endif %} />
+                    <svg class="checkbox-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{{ choice.choice_label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="absolute right-0 top-0 bottom-0 w-10 border-l border-slate-100 flex flex-col items-center justify-between py-2 bg-slate-50/30">
+              <button type="button" class="p-1 text-slate-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <div class="w-1 h-24 bg-slate-100 rounded-full"></div>
+              <button type="button" class="p-1 text-slate-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium italic">Можно выбрать несколько вариантов</p>
+        </div>
+
+        {# Акцент #}
+        <div class="space-y-2">
+          <label class="block text-[13px] font-bold text-slate-700">{{ form.focus.label }}</label>
+          {{ form.focus }}
+        </div>
+
+        {# Группы мышц #}
+        <div class="space-y-2">
+          <label class="block text-[13px] font-bold text-slate-700">{{ form.muscles.label }}</label>
+          <div class="relative border border-slate-200 rounded-xl bg-white overflow-hidden">
+            <div class="max-h-48 overflow-y-auto p-4 pr-12 space-y-3 custom-scrollbar">
+              {% for choice in form.muscles %}
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div class="checkbox-wrap">
+                    <input type="checkbox" name="{{ form.muscles.html_name }}" value="{{ choice.data.value }}"
+                           class="custom-checkbox"
+                           {% if choice.data.value in form.muscles.value %}checked{% endif %} />
+                    <svg class="checkbox-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{{ choice.choice_label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="absolute right-0 top-0 bottom-0 w-10 border-l border-slate-100 flex flex-col items-center justify-between py-2 bg-slate-50/30">
+              <button type="button" class="p-1 text-slate-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <div class="w-1 h-24 bg-slate-100 rounded-full"></div>
+              <button type="button" class="p-1 text-slate-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        {# Интенсивность и телосложение #}
+        {% for field in form %}
+          {% if field.name == 'intensity' or field.name == 'body_type' %}
+          <div class="space-y-2">
+            <label class="block text-[13px] font-bold text-slate-700">{{ field.label }}</label>
+            <div class="relative">
+              {{ field }}
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        {% endfor %}
+
+        <div class="flex justify-between items-center pt-8 border-t border-slate-100">
+          <button type="button" onclick="prevStep()" class="px-6 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all active:scale-95">Назад</button>
+          <button type="button" onclick="nextStep()" class="bg-[#0088CC] text-white font-bold py-3 px-10 rounded-xl text-sm active:scale-95 transition-all" style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">Далее</button>
+        </div>
+      </div>
+
+      {# ════════════════════════════════════════════════════════════════════ #}
+      {# ШАГ 3 — Профиль                                                     #}
+      {# ════════════════════════════════════════════════════════════════════ #}
+      <div id="step-3" class="step-content space-y-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="block text-[13px] font-bold text-slate-700">{{ form.gender.label }}</label>
+            <div class="relative">
+              {{ form.gender }}
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[13px] font-bold text-slate-700">{{ form.age.label }}</label>
+            {{ form.age }}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-2">
+            <label class="block text-[13px] font-bold text-slate-700">{{ form.weight.label }}</label>
+            {{ form.weight }}
+          </div>
+          <div class="space-y-2">
+            <label class="block text-[13px] font-bold text-slate-700">{{ form.height.label }}</label>
+            {{ form.height }}
+          </div>
+        </div>
+
+        {# Травмы #}
+        <div class="space-y-2">
+          <label class="block text-[13px] font-bold text-slate-700">{{ form.injuries.label }}</label>
+          <div class="relative border border-slate-200 rounded-xl bg-white overflow-hidden">
+            <div class="p-4 pr-12 space-y-3 custom-scrollbar">
+              {% for choice in form.injuries %}
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div class="checkbox-wrap">
+                    <input type="checkbox" name="{{ form.injuries.html_name }}" value="{{ choice.data.value }}"
+                           class="custom-checkbox"
+                           {% if choice.data.value in form.injuries.value %}checked{% endif %} />
+                    <svg class="checkbox-check" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                  <span class="text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">{{ choice.choice_label }}</span>
+                </label>
+              {% endfor %}
+            </div>
+            <div class="absolute right-0 top-0 bottom-0 w-10 border-l border-slate-100 flex flex-col items-center justify-between py-2 bg-slate-50/30">
+              <button type="button" class="p-1 text-slate-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button>
+              <div class="w-1 h-24 bg-slate-100 rounded-full"></div>
+              <button type="button" class="p-1 text-slate-300"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        {# Доп. информация #}
+        <div class="space-y-2">
+          <label class="block text-[13px] font-bold text-slate-700">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+
+        <div class="flex justify-between items-center pt-8 border-t border-slate-100">
+          <button type="button" onclick="prevStep()" class="px-6 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all active:scale-95">Назад</button>
+          <button type="submit" id="submit-btn"
+                  class="bg-[#0088CC] text-white font-bold py-3 px-10 rounded-xl text-sm active:scale-95 transition-all flex items-center gap-3"
+                  style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">
+            <svg id="submit-spinner" class="hidden animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+            <span id="submit-text">Создать план тренировок</span>
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let currentStep = 1;
+
+  function updateUI() {
+    // Контент шагов
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    document.getElementById('step-' + currentStep).classList.add('active');
+
+    // Прогресс-линия
+    document.getElementById('step-progress').style.width = ((currentStep - 1) / 2 * 100) + '%';
+
+    // Кружки
+    for (let i = 1; i <= 3; i++) {
+      const inner = document.querySelector('#dot-' + i + ' div:first-child');
+      const label = document.querySelector('#dot-' + i + ' div:last-child');
+      if (i <= currentStep) {
+        inner.className = 'w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] bg-[#0088CC] text-white';
+        inner.style.boxShadow = '0 4px 14px rgba(0,136,204,0.3)';
+        label.className = 'absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-[#0088CC]';
+      } else {
+        inner.className = 'w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] bg-white border border-slate-200 text-slate-400';
+        inner.style.boxShadow = 'none';
+        label.className = 'absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[10px] font-bold uppercase tracking-widest text-slate-300';
+      }
+    }
+  }
+
+  function nextStep() {
+    if (currentStep < 3) { currentStep++; updateUI(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+  }
+  function prevStep() {
+    if (currentStep > 1) { currentStep--; updateUI(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+  }
+
+  // Лоадер при отправке
+  document.getElementById('workout-form').addEventListener('submit', function () {
+    const btn     = document.getElementById('submit-btn');
+    const spinner = document.getElementById('submit-spinner');
+    const text    = document.getElementById('submit-text');
+    btn.disabled  = true;
+    spinner.classList.remove('hidden');
+    text.textContent = 'Генерирую тренировку...';
+    btn.style.opacity = '0.8';
+  });
+</script>
+{% endblock %}

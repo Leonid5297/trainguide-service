@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}О проекте — TrainGuide{% endblock %}
+
+{% block nav_about %}active{% endblock %}
+{% block mob_about %}text-[#0088CC]{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-20 px-6">
+
+  <!-- Hero section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+    <div>
+      <div class="inline-block px-4 py-1.5 bg-[#0088CC]/10 text-[#0088CC] text-[10px] font-bold uppercase tracking-[0.2em] rounded-full mb-6">
+        О проекте TrainGuide
+      </div>
+      <h2 class="text-[48px] font-black mb-8 leading-[1.1] tracking-tight text-slate-900">
+        Ваш персональный путь к <br />идеальной форме
+      </h2>
+      <div class="space-y-6 text-slate-600 text-lg font-medium leading-relaxed">
+        <p>TrainGuide — это инновационная платформа, объединяющая спортивную науку и технологии искусственного интеллекта для создания максимально эффективных тренировочных программ.</p>
+        <p>Мы верим, что фитнес должен быть доступным, понятным и, главное, безопасным. Наша система анализирует ваши индивидуальные параметры, цели и ограничения, чтобы предложить план, который действительно работает.</p>
+        <p class="text-base text-slate-500">Забудьте о шаблонных программах из интернета. С TrainGuide вы получаете живой, адаптирующийся под ваш прогресс инструмент.</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-8 mt-12">
+        <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+          <div class="text-3xl font-black text-[#0088CC] mb-2">10k+</div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Упражнений в базе</div>
+        </div>
+        <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+          <div class="text-3xl font-black text-[#0088CC] mb-2">98%</div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Точность подбора</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative">
+      <div class="aspect-[4/5] bg-slate-100 rounded-[48px] overflow-hidden shadow-2xl">
+        <img src="https://images.unsplash.com/photo-1510017803434-a899398421b3?auto=format&fit=crop&q=80&w=1000"
+             alt="TrainGuide Project"
+             class="w-full h-full object-cover"
+             referrerpolicy="no-referrer" />
+      </div>
+      <div class="absolute -bottom-10 -left-10 bg-white p-8 rounded-[32px] shadow-2xl border border-slate-50 max-w-xs hidden md:block">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="w-12 h-12 rounded-full bg-[#0088CC] flex items-center justify-center text-white flex-shrink-0"
+               style="box-shadow:0 4px 14px rgba(0,136,204,0.3)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div class="font-black text-slate-900 leading-tight">Научно <br />обосновано</div>
+        </div>
+        <p class="text-xs text-slate-400 font-medium leading-relaxed">
+          Все алгоритмы TrainGuide базируются на принципах спортивной медицины и современных исследованиях.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="mt-40 grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="p-8 bg-white border border-slate-100 rounded-[32px] shadow-sm hover:shadow-md transition-all">
+      <div class="text-[#0088CC] font-black text-4xl opacity-10 mb-6">01</div>
+      <h3 class="text-xl font-black text-slate-900 mb-4">Персонализация</h3>
+      <p class="text-slate-500 text-sm leading-relaxed font-medium">Никаких шаблонов. Каждая тренировка строится с нуля под ваш текущий уровень и доступный инвентарь.</p>
+    </div>
+    <div class="p-8 bg-white border border-slate-100 rounded-[32px] shadow-sm hover:shadow-md transition-all">
+      <div class="text-[#0088CC] font-black text-4xl opacity-10 mb-6">02</div>
+      <h3 class="text-xl font-black text-slate-900 mb-4">Доступность</h3>
+      <p class="text-slate-500 text-sm leading-relaxed font-medium">Занимайтесь где угодно: в зале, дома или на улице. Мы адаптируем программу под ваши условия.</p>
+    </div>
+    <div class="p-8 bg-white border border-slate-100 rounded-[32px] shadow-sm hover:shadow-md transition-all">
+      <div class="text-[#0088CC] font-black text-4xl opacity-10 mb-6">03</div>
+      <h3 class="text-xl font-black text-slate-900 mb-4">Безопасность</h3>
+      <p class="text-slate-500 text-sm leading-relaxed font-medium">Учет травм и ограничений — наш приоритет. Мы помогаем прогрессировать без вреда для здоровья.</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

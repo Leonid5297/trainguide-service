@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Профиль — TrainGuide{% endblock %}
+{# Отключаем глобальный flash-баннер из base.html — сообщения рендерятся внутри карточки #}
+{% block flash_messages %}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-12 px-6">
+
+  <!-- ===== PAGE HEADER ===== -->
+  <div class="mb-10">
+    <div class="inline-block px-4 py-1.5 bg-[#0088CC]/10 text-[#0088CC] text-[10px] font-bold uppercase tracking-[0.2em] rounded-full mb-4">Личный кабинет</div>
+    <h1 class="text-[32px] font-black tracking-tight text-slate-900">Мой профиль</h1>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+    <!-- ===== LEFT COLUMN ===== -->
+    <div class="space-y-6">
+
+      <!-- Avatar card -->
+      <div class="bg-white border border-slate-100 rounded-3xl shadow-sm p-8 flex flex-col items-center text-center">
+
+        <!-- Avatar wrap -->
+        <div class="relative mb-4 group cursor-pointer" onclick="document.getElementById('avatar-input').click()">
+          {% if profile_form.instance.avatar %}
+            <img id="avatar-preview"
+                 src="{{ profile_form.instance.avatar.url }}"
+                 alt="Аватар"
+                 class="w-24 h-24 rounded-full object-cover shadow-xl"
+                 style="box-shadow:0 8px 24px rgba(0,136,204,0.3)" />
+          {% else %}
+            <div id="avatar-initials"
+                 class="w-24 h-24 rounded-full bg-gradient-to-br from-[#0088CC] to-[#005f99] flex items-center justify-center text-white text-3xl font-black shadow-xl"
+                 style="box-shadow:0 8px 24px rgba(0,136,204,0.3)">
+              {{ user.get_full_name|first|upper|default:user.username|first|upper }}
+            </div>
+            <img id="avatar-preview"
+                 src="" alt="Аватар"
+                 class="w-24 h-24 rounded-full object-cover shadow-xl hidden"
+                 style="box-shadow:0 8px 24px rgba(0,136,204,0.3)" />
+          {% endif %}
+
+          <!-- Hover overlay -->
+          <div class="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Скрытый input привязан к форме через form="profile-form" -->
+        <input type="file"
+               id="avatar-input"
+               name="{{ profile_form.avatar.html_name }}"
+               accept="image/*"
+               form="profile-form"
+               class="hidden"
+               onchange="previewAvatar(this)" />
+
+        <div class="text-lg font-black text-slate-900 mb-1">
+          {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
+        </div>
+        <div class="text-sm text-slate-400 font-medium mb-2">{{ user.email|default:"—" }}</div>
+        <div class="text-[11px] font-bold text-slate-300 uppercase tracking-widest mb-5">@{{ user.username }}</div>
+
+        <button type="button"
+                onclick="document.getElementById('avatar-input').click()"
+                class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all">
+          Изменить фото
+        </button>
+        <p id="avatar-filename" class="mt-2 text-[11px] text-slate-400 font-medium hidden"></p>
+      </div>
+
+      <!-- Stats card -->
+      <div class="bg-white border border-slate-100 rounded-3xl shadow-sm p-8 space-y-5">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-slate-900">Статистика тренировок</h3>
+
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-500">Тренировок завершено</span>
+          <span class="text-sm font-black text-[#0088CC]">{{ stats.total_completed }}</span>
+        </div>
+        <div class="h-px bg-slate-50"></div>
+
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-500">Планов создано</span>
+          <span class="text-sm font-black text-[#0088CC]">{{ stats.total_generated }}</span>
+        </div>
+        <div class="h-px bg-slate-50"></div>
+
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-500">Дней активности</span>
+          <span class="text-sm font-black text-[#0088CC]">{{ stats.current_streak }}</span>
+        </div>
+        <div class="h-px bg-slate-50"></div>
+
+        {% if stats.favorite_goal %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-500">Любимая цель</span>
+          <span class="text-sm font-black text-slate-700 text-right max-w-[140px]">{{ stats.favorite_goal }}</span>
+        </div>
+        <div class="h-px bg-slate-50"></div>
+        {% endif %}
+
+        {% if stats.completion_rate %}
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-500">% завершения</span>
+          <span class="text-sm font-black text-[#0088CC]">{{ stats.completion_rate }}%</span>
+        </div>
+        <div class="h-px bg-slate-50"></div>
+        {% endif %}
+
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-500">Участник с</span>
+          <span class="text-sm font-black text-slate-700">{{ user.date_joined|date:"M Y" }}</span>
+        </div>
+
+        {% if stats.total_generated == 0 %}
+        <div class="pt-2">
+          <a href="{% url 'workout:generate' %}"
+             class="block w-full text-center py-2.5 bg-[#0088CC]/10 hover:bg-[#0088CC]/20
+                    text-[#0088CC] text-xs font-bold rounded-xl transition-all">
+            Создать первую тренировку
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+  
+  
+
+      <!-- Danger zone -->
+      <div class="bg-white border border-red-50 rounded-3xl shadow-sm p-8 space-y-4">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-slate-900">Опасная зона</h3>
+        <p class="text-xs text-slate-400 font-medium leading-relaxed">Удаление аккаунта необратимо. Все данные будут потеряны.</p>
+        <button class="w-full px-4 py-2.5 border border-red-200 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all">
+          Удалить аккаунт
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ===== RIGHT COLUMN ===== -->
+    <div class="lg:col-span-2 space-y-6">
+
+      <!-- Personal info card -->
+      <div class="bg-white border border-slate-100 rounded-3xl shadow-sm p-8 md:p-10">
+        <h2 class="text-base font-black text-slate-900 mb-8 pb-4 border-b border-slate-50">Личные данные</h2>
+
+        <!-- Ошибки user_form -->
+        {% if user_form.non_field_errors %}
+        <div class="mb-6 px-4 py-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+          <svg class="flex-shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <ul class="space-y-1">
+            {% for e in user_form.non_field_errors %}<li class="text-[13px] font-semibold text-red-600">{{ e }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Ошибки profile_form -->
+        {% if profile_form.non_field_errors %}
+        <div class="mb-6 px-4 py-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
+          <svg class="flex-shrink-0 mt-0.5" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <ul class="space-y-1">
+            {% for e in profile_form.non_field_errors %}<li class="text-[13px] font-semibold text-red-600">{{ e }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <!-- Flash messages -->
+        {% if messages %}
+          {% for message in messages %}
+            {% if message.tags == 'success' %}
+            <div class="mb-6 px-4 py-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+              <svg class="flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <span class="text-[13px] font-semibold text-emerald-700">{{ message }}</span>
+            </div>
+            {% elif message.tags == 'error' %}
+            <div class="mb-6 px-4 py-3.5 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+              <svg class="flex-shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="text-[13px] font-semibold text-red-600">{{ message }}</span>
+            </div>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+
+        <!-- Единая форма: user_form + profile_form в одном <form> -->
+        <form method="post" enctype="multipart/form-data" id="profile-form" novalidate class="space-y-6">
+          {% csrf_token %}
+
+          <!-- ── Поля user_form ────────────────────────────────────────────── -->
+
+          <!-- First + Last name -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <label for="{{ user_form.first_name.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Имя</label>
+              <input type="text"
+                name="{{ user_form.first_name.html_name }}"
+                id="{{ user_form.first_name.id_for_label }}"
+                value="{{ user_form.first_name.value|default:'' }}"
+                placeholder="Введите имя"
+                class="w-full p-3.5 bg-white border {% if user_form.first_name.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#0088CC]/20 focus:border-[#0088CC] transition-all hover:border-slate-300 placeholder:text-slate-300" />
+              {% if user_form.first_name.errors %}<ul class="space-y-1">{% for e in user_form.first_name.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="space-y-2">
+              <label for="{{ user_form.last_name.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Фамилия</label>
+              <input type="text"
+                name="{{ user_form.last_name.html_name }}"
+                id="{{ user_form.last_name.id_for_label }}"
+                value="{{ user_form.last_name.value|default:'' }}"
+                placeholder="Введите фамилию"
+                class="w-full p-3.5 bg-white border {% if user_form.last_name.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#0088CC]/20 focus:border-[#0088CC] transition-all hover:border-slate-300 placeholder:text-slate-300" />
+              {% if user_form.last_name.errors %}<ul class="space-y-1">{% for e in user_form.last_name.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="space-y-2">
+            <label for="{{ user_form.email.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Email</label>
+            <input type="email"
+              name="{{ user_form.email.html_name }}"
+              id="{{ user_form.email.id_for_label }}"
+              value="{{ user_form.email.value|default:'' }}"
+              placeholder="you@example.com"
+              autocomplete="email"
+              class="w-full p-3.5 bg-white border {% if user_form.email.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#0088CC]/20 focus:border-[#0088CC] transition-all hover:border-slate-300 placeholder:text-slate-300" />
+            {% if user_form.email.errors %}<ul class="space-y-1">{% for e in user_form.email.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- ── Поля profile_form ─────────────────────────────────────────── -->
+
+          <!-- Age + Weight + Height -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="space-y-2">
+              <label for="{{ profile_form.age.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Возраст</label>
+              <input type="number"
+                name="{{ profile_form.age.html_name }}"
+                id="{{ profile_form.age.id_for_label }}"
+                value="{{ profile_form.age.value|default:'' }}"
+                placeholder="—"
+                min="10" max="100"
+                class="w-full p-3.5 bg-white border {% if profile_form.age.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#0088CC]/20 focus:border-[#0088CC] transition-all hover:border-slate-300 placeholder:text-slate-300" />
+              {% if profile_form.age.errors %}<ul class="space-y-1">{% for e in profile_form.age.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="space-y-2">
+              <label for="{{ profile_form.weight.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Вес (кг)</label>
+              <input type="number"
+                name="{{ profile_form.weight.html_name }}"
+                id="{{ profile_form.weight.id_for_label }}"
+                value="{{ profile_form.weight.value|default:'' }}"
+                placeholder="—"
+                min="30" max="300"
+                class="w-full p-3.5 bg-white border {% if profile_form.weight.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#0088CC]/20 focus:border-[#0088CC] transition-all hover:border-slate-300 placeholder:text-slate-300" />
+              {% if profile_form.weight.errors %}<ul class="space-y-1">{% for e in profile_form.weight.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="space-y-2">
+              <label for="{{ profile_form.height.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Рост (см)</label>
+              <input type="number"
+                name="{{ profile_form.height.html_name }}"
+                id="{{ profile_form.height.id_for_label }}"
+                value="{{ profile_form.height.value|default:'' }}"
+                placeholder="—"
+                min="100" max="250"
+                class="w-full p-3.5 bg-white border {% if profile_form.height.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-[#0088CC]/20 focus:border-[#0088CC] transition-all hover:border-slate-300 placeholder:text-slate-300" />
+              {% if profile_form.height.errors %}<ul class="space-y-1">{% for e in profile_form.height.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+          </div>
+
+          <!-- Gender -->
+          <div class="space-y-2">
+            <label for="{{ profile_form.gender.id_for_label }}" class="block text-[13px] font-bold text-slate-700">Пол</label>
+            <div class="relative">
+              <select
+                name="{{ profile_form.gender.html_name }}"
+                id="{{ profile_form.gender.id_for_label }}"
+                class="w-full p-3.5 bg-white border {% if profile_form.gender.errors %}border-red-300{% else %}border-slate-200{% endif %} rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#0088CC]/20 outline-none appearance-none cursor-pointer text-slate-700 transition-all hover:border-slate-300">
+                {% for value, label in profile_form.gender.field.choices %}
+                  <option value="{{ value }}"{% if profile_form.gender.value == value %} selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+              <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+            {% if profile_form.gender.errors %}<ul class="space-y-1">{% for e in profile_form.gender.errors %}<li class="text-[12px] font-semibold text-red-500">{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+
+          <!-- Submit -->
+          <div class="flex justify-end pt-2">
+            <button type="submit"
+                    class="bg-[#0088CC] hover:bg-[#0077bb] text-white font-bold py-3 px-8 rounded-xl text-sm transition-all"
+                    style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">
+              Сохранить изменения
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ===== МОИ ТРЕНИРОВКИ ===== -->
+      <div class="bg-white border border-slate-100 rounded-3xl shadow-sm p-8 md:p-10">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-50">
+          <div>
+            <h2 class="text-base font-black text-slate-900">Мои тренировки</h2>
+            <p class="text-xs text-slate-400 font-medium mt-1">История и планы тренировок</p>
+          </div>
+          <div class="w-10 h-10 rounded-2xl bg-[#0088CC]/10 flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 120 70" fill="none">
+              <rect x="2"  y="22" width="14" height="26" rx="3" fill="#0088CC"/>
+              <rect x="16" y="16" width="10" height="38" rx="3" fill="#0088CC"/>
+              <rect x="26" y="30" width="68" height="10" rx="2" fill="#0088CC"/>
+              <rect x="94" y="16" width="10" height="38" rx="3" fill="#0088CC"/>
+              <rect x="104" y="22" width="14" height="26" rx="3" fill="#0088CC"/>
+              <circle cx="60" cy="35" r="20" stroke="#0088CC" stroke-width="5"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <p class="text-sm text-slate-500 font-medium leading-relaxed">
+            Просматривайте историю тренировок,<br class="hidden sm:block"/>отслеживайте прогресс и управляйте планами.
+          </p>
+          <a href="{% url 'workout:my_workouts' %}"
+             class="flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0088CC] hover:bg-[#0077bb] transition-colors text-white text-[13px] font-black uppercase tracking-widest"
+             style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">
+            <svg width="15" height="15" viewBox="0 0 120 70" fill="none">
+              <rect x="2"  y="22" width="14" height="26" rx="3" fill="white"/>
+              <rect x="16" y="16" width="10" height="38" rx="3" fill="white"/>
+              <rect x="26" y="30" width="68" height="10" rx="2" fill="white"/>
+              <rect x="94" y="16" width="10" height="38" rx="3" fill="white"/>
+              <rect x="104" y="22" width="14" height="26" rx="3" fill="white"/>
+              <circle cx="60" cy="35" r="20" stroke="white" stroke-width="5"/>
+            </svg>
+            Перейти
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="saved-toast"
+     class="fixed bottom-8 right-8 bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-bold z-[100] translate-y-20 opacity-0 transition-all duration-300">
+  <div class="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  Изменения сохранены
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  {% if messages %}{% for message in messages %}{% if message.tags == 'success' %}
+  (function () {
+    const t = document.getElementById('saved-toast');
+    t.style.transform = 'translateY(0)';
+    t.style.opacity   = '1';
+    setTimeout(function () {
+      t.style.transform = 'translateY(80px)';
+      t.style.opacity   = '0';
+    }, 2500);
+  })();
+  {% endif %}{% endfor %}{% endif %}
+
+  function previewAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const preview  = document.getElementById('avatar-preview');
+      const initials = document.getElementById('avatar-initials');
+      const filename = document.getElementById('avatar-filename');
+      if (preview)  { preview.src = e.target.result; preview.classList.remove('hidden'); }
+      if (initials)   initials.classList.add('hidden');
+      if (filename) { filename.textContent = file.name; filename.classList.remove('hidden'); }
+    };
+    reader.readAsDataURL(file);
+  }
+</script>
+{% endblock %}

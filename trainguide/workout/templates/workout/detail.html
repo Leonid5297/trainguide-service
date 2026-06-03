@@ -1,0 +1,513 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  {% if workout.result %}{{ workout.result.title }}{% else %}Тренировка{% endif %} — TrainGuide
+{% endblock %}
+
+{% block nav_generator %}active{% endblock %}
+{% block mob_generator %}text-[#0088CC]{% endblock %}
+
+{% block extra_head %}
+<style>
+  .exercise-card { transition: all 0.25s ease; }
+  .exercise-card.done { opacity: 0.55; }
+  .exercise-card.done .ex-title { text-decoration: line-through; color: #94A3B8; }
+  #progress-bar-fill { transition: width 0.4s ease; }
+  .check-btn { transition: all 0.2s ease; }
+  .check-btn.checked { background-color: #0088CC; border-color: #0088CC; }
+  .check-btn.checked svg { opacity: 1; }
+  .check-btn svg { opacity: 0; transition: opacity 0.15s; }
+
+  /* Спиннер */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { animation: spin 1s linear infinite; }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+  .pulse-1 { animation: pulse-dot 1.2s ease-in-out infinite; }
+  .pulse-2 { animation: pulse-dot 1.2s ease-in-out 0.4s infinite; }
+  .pulse-3 { animation: pulse-dot 1.2s ease-in-out 0.8s infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-6">
+
+  <a href="{% url 'workout:generate' %}"
+     class="inline-flex items-center gap-2 text-slate-400 hover:text-[#0088CC]
+            transition-colors mb-8 font-bold uppercase tracking-widest text-[10px]">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polyline points="19 12 5 12"/><polyline points="12 19 5 12 12 5"/>
+    </svg>
+    Создать новую тренировку
+  </a>
+
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {# PENDING — спиннер, JS поллинг                                             #}
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {% if workout.status == 'pending' %}
+  <div id="pending-block" class="text-center py-24">
+    <div class="flex justify-center mb-8">
+      <div class="w-20 h-20 rounded-full bg-[#0088CC]/10 flex items-center justify-center">
+        <svg class="spinner text-[#0088CC]" width="36" height="36" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+        </svg>
+      </div>
+    </div>
+    <h2 class="text-2xl font-black text-slate-900 mb-3">Генерирую тренировку</h2>
+    <p class="text-slate-500 font-medium mb-6 max-w-sm mx-auto leading-relaxed">
+      ИИ составляет персональный план под ваши параметры. Обычно это занимает 5–10 секунд.
+    </p>
+    <div class="flex items-center justify-center gap-2">
+      <div class="w-2.5 h-2.5 rounded-full bg-[#0088CC] pulse-1"></div>
+      <div class="w-2.5 h-2.5 rounded-full bg-[#0088CC] pulse-2"></div>
+      <div class="w-2.5 h-2.5 rounded-full bg-[#0088CC] pulse-3"></div>
+    </div>
+  </div>
+
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {# ERROR                                                                      #}
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {% elif workout.status == 'error' %}
+  <div class="bg-red-50 border border-red-100 rounded-3xl p-10 text-center">
+    <div class="text-red-400 flex justify-center mb-4">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+    </div>
+    <h2 class="text-xl font-black text-slate-900 mb-2">Не удалось создать тренировку</h2>
+    <p class="text-slate-500 text-sm mb-6">{{ workout.error_msg }}</p>
+    <a href="{% url 'workout:generate' %}"
+       class="inline-flex items-center gap-2 px-8 py-3 bg-[#0088CC] text-white font-bold rounded-xl text-sm">
+      Попробовать снова
+    </a>
+  </div>
+
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {# DONE — полная страница тренировки                                          #}
+  {# ══════════════════════════════════════════════════════════════════════════ #}
+  {% elif workout.status == 'done' and workout.result %}
+  {% with r=workout.result %}
+
+  {# Заголовок #}
+  <div class="mb-8">
+    <div class="inline-block px-4 py-1.5 bg-[#0088CC]/10 text-[#0088CC]
+                text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
+      Ваш персональный план
+    </div>
+    <h1 class="text-[36px] md:text-[44px] font-black text-slate-900 leading-tight tracking-tight mb-2">
+      {{ r.title }}
+    </h1>
+    <p class="text-slate-400 text-sm font-medium">
+      Составлено {{ workout.created_at|date:"d E, Y" }}
+    </p>
+  </div>
+
+  {# Мета-плитки #}
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 text-center shadow-sm">
+      <div class="text-2xl font-black text-[#0088CC] mb-1">{{ r.meta.duration }}<span class="text-sm font-bold"> мин</span></div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Длительность</div>
+    </div>
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 text-center shadow-sm">
+      <div class="text-2xl font-black text-[#0088CC] mb-1">{{ r.meta.calories }}<span class="text-sm font-bold"> кк</span></div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Калории</div>
+    </div>
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 text-center shadow-sm">
+      <div class="text-sm font-black text-slate-900 mb-1 leading-tight">{{ r.meta.level }}</div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Уровень</div>
+    </div>
+    <div class="bg-white border border-slate-100 rounded-2xl p-5 text-center shadow-sm">
+      <div class="text-sm font-black text-slate-900 mb-1 leading-tight">{{ r.meta.goal }}</div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Цель</div>
+    </div>
+    <div class="col-span-2 md:col-span-1 bg-white border border-slate-100 rounded-2xl p-5 text-center shadow-sm">
+      <div class="text-sm font-black text-slate-900 mb-1 leading-tight">{{ r.meta.location }}</div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Место</div>
+    </div>
+  </div>
+
+  {# Прогресс-бар #}
+  {% if session %}
+  <div id="progress-block"
+       class="bg-white border rounded-2xl p-6 shadow-sm mb-8
+              {% if session.is_completed %}border-emerald-200 bg-emerald-50/30{% else %}border-slate-100{% endif %}">
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center gap-3">
+        {% if session.is_completed %}
+          <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span class="font-black text-emerald-600 text-base">Тренировка завершена!</span>
+        {% else %}
+          <div class="w-8 h-8 rounded-full bg-[#0088CC]/10 flex items-center justify-center">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2">
+              <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+            </svg>
+          </div>
+          <span class="font-black text-slate-900 text-base">Прогресс тренировки</span>
+        {% endif %}
+      </div>
+      <div class="text-right">
+        <span id="progress-done" class="text-2xl font-black text-[#0088CC]">{{ session.done_count }}</span>
+        <span class="text-slate-400 font-bold text-sm"> / </span>
+        <span class="text-slate-700 font-bold text-sm">{{ session.total_exercises }}</span>
+        <div class="text-[10px] font-bold uppercase tracking-widest text-slate-400">упражнений</div>
+      </div>
+    </div>
+    <div class="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+      <div id="progress-bar-fill"
+           class="absolute top-0 left-0 h-full rounded-full
+                  {% if session.is_completed %}bg-emerald-500{% else %}bg-[#0088CC]{% endif %}"
+           style="width: {{ session.progress }}%"></div>
+    </div>
+    <div class="flex justify-between mt-1.5">
+      <span class="text-[10px] text-slate-400 font-medium">0%</span>
+      <span id="progress-pct" class="text-[10px] font-black text-[#0088CC]">{{ session.progress }}%</span>
+      <span class="text-[10px] text-slate-400 font-medium">100%</span>
+    </div>
+    {% if not session.is_completed %}
+      <button id="complete-btn" onclick="completeWorkout()"
+              class="mt-5 w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white
+                     font-bold rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Завершить тренировку
+      </button>
+    {% else %}
+      <div class="mt-4 text-center text-[11px] text-emerald-500 font-bold uppercase tracking-widest">
+        Завершена {{ session.completed_at|date:"d E, Y в H:i" }}
+      </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {# Разминка #}
+  {% if r.warmup %}
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-black text-slate-900">Разминка</h2>
+      <div class="flex-1 h-px bg-slate-100"></div>
+    </div>
+    <div class="space-y-3">
+      {% for ex in r.warmup %}
+      <div class="flex items-start gap-4 p-4 bg-amber-50/50 border border-amber-100/80 rounded-2xl">
+        <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xs font-black flex-shrink-0 mt-0.5">{{ forloop.counter }}</div>
+        <div>
+          <div class="font-bold text-slate-900 text-sm mb-1">{{ ex.name }}
+            <span class="ml-2 text-[10px] font-bold text-amber-500 uppercase tracking-widest">{{ ex.duration }}</span>
+          </div>
+          <div class="text-slate-500 text-xs leading-relaxed">{{ ex.description }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# Основные блоки с чекбоксами #}
+  {% if r.blocks %}
+  <div class="mb-8 space-y-8">
+    {% for block in r.blocks %}
+    <div>
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-9 h-9 rounded-xl bg-[#0088CC]/10 flex items-center justify-center flex-shrink-0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2">
+            <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-black text-slate-900">{{ block.name }}</h2>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+      <div class="space-y-3">
+        {% for ex in block.exercises %}
+        <div class="exercise-card bg-white border border-slate-100 rounded-2xl p-5 shadow-sm
+                    {% if session %}{% for ck in session.completed_exercises %}{% if ck == forloop.parentloop.counter0|stringformat:'s'|add:'-'|add:forloop.counter0|stringformat:'s' %}done{% endif %}{% endfor %}{% endif %}"
+             id="ex-{{ forloop.parentloop.counter0 }}-{{ forloop.counter0 }}">
+          <div class="flex items-start gap-4">
+            {% if session and not session.is_completed %}
+            <button type="button"
+                    class="check-btn flex-shrink-0 w-7 h-7 rounded-lg border-2 border-slate-200
+                           flex items-center justify-center mt-0.5
+                           {% for ck in session.completed_exercises %}{% if ck == forloop.parentloop.counter0|stringformat:'s'|add:'-'|add:forloop.counter0|stringformat:'s' %}checked{% endif %}{% endfor %}"
+                    data-key="{{ forloop.parentloop.counter0 }}-{{ forloop.counter0 }}"
+                    onclick="toggleExercise(this)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            {% elif session and session.is_completed %}
+            <div class="flex-shrink-0 w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center mt-0.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <h3 class="ex-title font-black text-slate-900 text-base mb-1">{{ ex.name }}</h3>
+              {% if ex.tip %}
+              <p class="text-slate-500 text-xs leading-relaxed flex items-start gap-1.5 mb-3">
+                <svg class="flex-shrink-0 mt-0.5" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                {{ ex.tip }}
+              </p>
+              {% endif %}
+              {% if ex.muscles %}
+              <div class="flex flex-wrap gap-1.5 mb-3">
+                {% for muscle in ex.muscles %}
+                <span class="px-2 py-0.5 bg-slate-50 border border-slate-100 text-[9px] font-bold uppercase tracking-widest text-slate-400 rounded-full">{{ muscle }}</span>
+                {% endfor %}
+              </div>
+              {% endif %}
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+                <div class="text-center px-3 py-3 bg-[#0088CC]/5 rounded-xl border border-[#0088CC]/10">
+                  <div class="text-lg font-black text-[#0088CC]">{{ ex.sets }}</div>
+                  <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Подх.</div>
+                </div>
+                <div class="text-center px-3 py-3 bg-[#0088CC]/5 rounded-xl border border-[#0088CC]/10">
+                  <div class="text-sm font-black text-[#0088CC] leading-tight">{{ ex.reps }}</div>
+                  <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Повт.</div>
+                </div>
+                <div class="text-center px-3 py-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div class="text-xs font-black text-slate-700 leading-tight">{{ ex.rest }}</div>
+                  <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Отдых</div>
+                </div>
+                <div class="text-center px-3 py-3 bg-slate-50 rounded-xl border border-slate-100">
+                  <div class="text-xs font-black text-slate-700 leading-tight">{{ ex.weight|default:"—" }}</div>
+                  <div class="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Вес</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# Заминка #}
+  {% if r.cooldown %}
+  <div class="mb-8">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-black text-slate-900">Заминка</h2>
+      <div class="flex-1 h-px bg-slate-100"></div>
+    </div>
+    <div class="space-y-3">
+      {% for ex in r.cooldown %}
+      <div class="flex items-start gap-4 p-4 bg-emerald-50/50 border border-emerald-100/80 rounded-2xl">
+        <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xs font-black flex-shrink-0 mt-0.5">{{ forloop.counter }}</div>
+        <div>
+          <div class="font-bold text-slate-900 text-sm mb-1">{{ ex.name }}
+            <span class="ml-2 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">{{ ex.duration }}</span>
+          </div>
+          <div class="text-slate-500 text-xs leading-relaxed">{{ ex.description }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# Советы #}
+  {% if r.tips %}
+  <div class="bg-[#0088CC]/5 border border-[#0088CC]/10 rounded-3xl p-8 mb-8">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-9 h-9 rounded-xl bg-[#0088CC]/10 flex items-center justify-center flex-shrink-0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      </div>
+      <h2 class="text-lg font-black text-slate-900">Советы</h2>
+    </div>
+    <ul class="space-y-3">
+      {% for tip in r.tips %}
+      <li class="flex items-start gap-3 text-sm text-slate-600">
+        <div class="w-5 h-5 rounded-full bg-[#0088CC]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        {{ tip }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {# Кнопки #}
+  <div class="flex flex-col sm:flex-row gap-4 pt-8 border-t border-slate-100">
+    <a href="{% url 'workout:generate' %}"
+      class="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-[#0088CC] text-white font-bold rounded-2xl text-sm hover:bg-[#0077bb] transition-all"
+      style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">
+      Создать новую тренировку
+    </a>
+    <a href="{% url 'workout:my_workouts' %}"
+      class="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-white border border-slate-200 text-slate-700 font-bold rounded-2xl text-sm hover:border-[#0088CC] hover:text-[#0088CC] transition-all">
+      Мои тренировки
+    </a>
+    {% if workout.status == 'done' and workout.result %}
+    <button id="export-btn"
+            onclick="requestExport()"
+            class="flex-1 flex items-center justify-center gap-2 px-8 py-4
+                  bg-white border border-slate-200 text-slate-700 font-bold
+                  rounded-2xl text-sm hover:border-[#0088CC] hover:text-[#0088CC]
+                  transition-all">
+      <svg id="export-icon" width="16" height="16" viewBox="0 0 24 24"
+          fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      <span id="export-text">Скачать PDF</span>
+    </button>
+    {% endif %}
+  </div>
+
+  {% endwith %}
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const WORKOUT_PK   = {{ workout.pk }};
+  const STATUS_URL   = "{% url 'workout:status' workout.pk %}";
+  const TOGGLE_URL   = "{% url 'workout:toggle_exercise' workout.pk %}";
+  const COMPLETE_URL = "{% url 'workout:complete_session' workout.pk %}";
+  const CSRF_TOKEN   = "{{ csrf_token }}";
+  const IS_PENDING   = "{{ workout.status }}" === "pending";
+
+  // ── Поллинг пока тренировка генерируется ────────────────────────────────────
+  if (IS_PENDING) {
+    const poll = setInterval(() => {
+      fetch(STATUS_URL)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'done' || data.status === 'error') {
+            clearInterval(poll);
+            window.location.reload();
+          }
+        })
+        .catch(() => {});
+    }, 2000);
+  }
+
+  // ── Чекбокс упражнения ───────────────────────────────────────────────────────
+  function toggleExercise(btn) {
+    const key = btn.dataset.key;
+    fetch(TOGGLE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify({ key }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      data.checked ? btn.classList.add('checked') : btn.classList.remove('checked');
+      const parts = key.split('-');
+      const card  = document.getElementById('ex-' + parts[0] + '-' + parts[1]);
+      if (card) data.checked ? card.classList.add('done') : card.classList.remove('done');
+      updateProgress(data.done, data.total, data.progress);
+    });
+  }
+
+  function updateProgress(done, total, pct) {
+    const fill  = document.getElementById('progress-bar-fill');
+    const donEl = document.getElementById('progress-done');
+    const pctEl = document.getElementById('progress-pct');
+    if (fill)  fill.style.width  = pct + '%';
+    if (donEl) donEl.textContent = done;
+    if (pctEl) pctEl.textContent = pct + '%';
+  }
+
+  // ── Завершить тренировку ─────────────────────────────────────────────────────
+  function completeWorkout() {
+    if (!confirm('Завершить тренировку?')) return;
+    fetch(COMPLETE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify({}),
+    })
+    .then(r => r.json())
+    .then(data => { if (data.is_completed) window.location.reload(); });
+  }
+</script>
+<script>
+  const EXPORT_REQUEST_URL = "{% url 'workout:export_request' workout.pk %}";
+  const CSRF = "{{ csrf_token }}";
+  let exportPollInterval = null;
+
+  function requestExport() {
+    const btn  = document.getElementById('export-btn');
+    const icon = document.getElementById('export-icon');
+    const text = document.getElementById('export-text');
+
+    // Показываем спиннер
+    btn.disabled = true;
+    btn.classList.add('opacity-70');
+    text.textContent = 'Генерирую PDF...';
+    icon.innerHTML = '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>';
+    icon.classList.add('animate-spin');
+
+    fetch(EXPORT_REQUEST_URL, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.job_id) {
+        // Запускаем поллинг статуса
+        startExportPolling(data.job_id);
+      } else {
+        resetExportBtn('Ошибка — попробуй снова');
+      }
+    })
+    .catch(() => resetExportBtn('Ошибка — попробуй снова'));
+  }
+
+  function startExportPolling(jobId) {
+    exportPollInterval = setInterval(() => {
+      fetch(`/workout/export/${jobId}/status/`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'done') {
+            clearInterval(exportPollInterval);
+            // PDF готов — скачиваем
+            window.location.href = data.download_url;
+            setTimeout(() => resetExportBtn('Скачать PDF'), 2000);
+          } else if (data.status === 'error') {
+            clearInterval(exportPollInterval);
+            resetExportBtn('Ошибка генерации');
+          }
+        })
+        .catch(() => {});
+    }, 1500);
+  }
+
+  function resetExportBtn(label) {
+    const btn  = document.getElementById('export-btn');
+    const icon = document.getElementById('export-icon');
+    const text = document.getElementById('export-text');
+
+    btn.disabled = false;
+    btn.classList.remove('opacity-70');
+    text.textContent = label;
+    icon.classList.remove('animate-spin');
+    icon.innerHTML = `
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="7 10 12 15 17 10"/>
+      <line x1="12" y1="15" x2="12" y2="3"/>
+    `;
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Мои тренировки — TrainGuide{% endblock %}
+
+{% block nav_generator %}active{% endblock %}
+{% block mob_generator %}text-[#0088CC]{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-6">
+
+  {# ── Шапка ───────────────────────────────────────────────────────────────── #}
+  <div class="flex items-end justify-between mb-10 gap-6 flex-wrap">
+    <div>
+      <div class="inline-block px-4 py-1.5 bg-[#0088CC]/10 text-[#0088CC]
+                  text-[10px] font-black uppercase tracking-widest rounded-full mb-4">
+        История
+      </div>
+      <h1 class="text-[32px] font-black tracking-tight text-slate-900">Мои тренировки</h1>
+      <p class="text-slate-500 font-medium mt-2">Все сгенерированные планы сохранены здесь.</p>
+    </div>
+    <a href="{% url 'workout:generate' %}"
+       class="flex items-center gap-2 bg-[#0088CC] text-white font-bold
+              py-3 px-7 rounded-xl text-sm transition-all hover:bg-[#0077bb]"
+       style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      </svg>
+      Новая тренировка
+    </a>
+  </div>
+
+  {# ── Фильтр-табы ─────────────────────────────────────────────────────────── #}
+  <div class="flex items-center gap-2 mb-8 bg-slate-50 p-1.5 rounded-2xl w-fit border border-slate-100">
+    <a href="{% url 'workout:my_workouts' %}?filter=all"
+       class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all
+              {% if filter_by == 'all' %}bg-white text-slate-900 shadow-sm border border-slate-100{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+      Все
+    </a>
+    <a href="{% url 'workout:my_workouts' %}?filter=active"
+       class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
+              {% if filter_by == 'active' %}bg-white text-slate-900 shadow-sm border border-slate-100{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+      <span class="w-2 h-2 rounded-full bg-[#0088CC] inline-block"></span>
+      Активные
+    </a>
+    <a href="{% url 'workout:my_workouts' %}?filter=completed"
+       class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
+              {% if filter_by == 'completed' %}bg-white text-slate-900 shadow-sm border border-slate-100{% else %}text-slate-400 hover:text-slate-600{% endif %}">
+      <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+      Завершённые
+    </a>
+  </div>
+
+  {# ── Список тренировок ────────────────────────────────────────────────────── #}
+  {% if workouts %}
+    <div class="space-y-4">
+      {% for w in workouts %}
+        {% with r=w.result %}
+
+        {# Определяем состояние сессии #}
+
+        <a href="{{ w.get_absolute_url }}"
+           class="flex items-center gap-5 bg-white border border-slate-100
+                  rounded-2xl p-5 shadow-sm hover:shadow-md
+                  hover:border-[#0088CC]/20 transition-all group block">
+
+          {# Иконка #}
+          <div class="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center transition-colors
+                      {% if w.session.is_completed %}bg-emerald-50 group-hover:bg-emerald-500{% else %}bg-[#0088CC]/10 group-hover:bg-[#0088CC]{% endif %}">
+            {% if w.session.is_completed %}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" class="group-hover:stroke-white transition-colors">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            {% else %}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0088CC" stroke-width="2" class="group-hover:stroke-white transition-colors">
+                <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+              </svg>
+            {% endif %}
+          </div>
+
+          {# Контент #}
+          <div class="flex-1 min-w-0">
+            <div class="font-black text-slate-900 text-base mb-1 truncate
+                        group-hover:text-[#0088CC] transition-colors">
+              {% if r %}{{ r.title }}{% else %}Тренировка #{{ w.pk }}{% endif %}
+            </div>
+            <div class="flex items-center gap-3 flex-wrap mb-3">
+              {% if r %}
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ r.meta.goal }}</span>
+                <span class="w-1 h-1 bg-slate-200 rounded-full inline-block"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ r.meta.duration }} мин</span>
+                <span class="w-1 h-1 bg-slate-200 rounded-full inline-block"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ r.meta.location }}</span>
+              {% endif %}
+            </div>
+
+            {# Мини прогресс-бар #}
+            {% if w.session %}
+              <div class="flex items-center gap-3">
+                <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="h-full rounded-full transition-all
+                              {% if w.session.is_completed %}bg-emerald-500{% else %}bg-[#0088CC]{% endif %}"
+                       style="width: {{ w.session.progress }}%">
+                  </div>
+                </div>
+                <span class="text-[10px] font-bold {% if w.session.is_completed %}text-emerald-500{% else %}text-[#0088CC]{% endif %} whitespace-nowrap">
+                  {% if w.session.is_completed %}
+                    Завершена
+                  {% else %}
+                    {{ w.session.done_count }} / {{ w.session.total_exercises }}
+                  {% endif %}
+                </span>
+              </div>
+            {% else %}
+              <div class="flex items-center gap-2 text-[10px] text-slate-300 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-200 inline-block"></span>
+                Не начата
+              </div>
+            {% endif %}
+          </div>
+
+          {# Дата + стрелка #}
+          <div class="text-right flex-shrink-0">
+            <div class="text-[11px] text-slate-400 font-medium mb-3">
+              {{ w.created_at|date:"d E, Y" }}
+            </div>
+            {% if w.session.is_completed %}
+              <span class="inline-block px-2.5 py-1 bg-emerald-50 text-emerald-600
+                           text-[9px] font-black uppercase tracking-widest rounded-full">
+                ✓ Готово
+              </span>
+            {% else %}
+              <svg class="ml-auto text-slate-300 group-hover:text-[#0088CC] transition-colors"
+                   width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            {% endif %}
+          </div>
+
+        </a>
+        {% endwith %}
+      {% endfor %}
+    </div>
+
+  {% else %}
+    {# Пустое состояние #}
+    <div class="text-center py-24 bg-slate-50 rounded-[40px] border border-dashed border-slate-200">
+      <div class="text-slate-300 mb-6 flex justify-center">
+        {% if filter_by == 'completed' %}
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        {% elif filter_by == 'active' %}
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+          </svg>
+        {% else %}
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <path d="M6 5v14M18 5v14M2 9h4M18 9h4M2 15h4M18 15h4"/>
+          </svg>
+        {% endif %}
+      </div>
+      <h3 class="text-2xl font-black text-slate-900 mb-2">
+        {% if filter_by == 'completed' %}Завершённых тренировок нет
+        {% elif filter_by == 'active' %}Активных тренировок нет
+        {% else %}Тренировок пока нет{% endif %}
+      </h3>
+      <p class="text-slate-500 font-medium mb-8">
+        {% if filter_by == 'completed' %}Завершите тренировку чтобы она появилась здесь.
+        {% elif filter_by == 'active' %}Все тренировки завершены.
+        {% else %}Создайте первый персональный план тренировок с помощью ИИ.{% endif %}
+      </p>
+      <a href="{% url 'workout:generate' %}"
+         class="inline-flex items-center gap-2 bg-[#0088CC] text-white font-bold
+                py-3 px-8 rounded-xl text-sm transition-all hover:bg-[#0077bb]"
+         style="box-shadow:0 8px 20px -5px rgba(0,136,204,0.3)">
+        Создать тренировку
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
