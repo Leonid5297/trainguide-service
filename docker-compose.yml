@@ -1,0 +1,96 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  django:
+    build: ./trainguide
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file: ./trainguide/.env.docker
+    depends_on:
+      - postgres
+      - redis
+
+  workout:
+    build: ./workout-service
+    restart: always
+    ports:
+      - "8001:8001"
+    env_file: ./workout-service/.env.docker
+    depends_on:
+      - postgres
+      - redis
+
+  analytics:
+    build: ./analytics-service
+    restart: always
+    ports:
+      - "8002:8002"
+    env_file: ./analytics-service/.env.docker
+    depends_on:
+      - postgres
+      - redis
+
+  notification:
+    build: ./notification-service
+    restart: always
+    ports:
+      - "8003:8003"
+    env_file: ./notification-service/.env.docker
+    depends_on:
+      - postgres
+      - redis
+
+  export:
+    build: ./export-service
+    restart: always
+    ports:
+      - "8004:8004"
+    env_file: ./export-service/.env.docker
+    volumes:
+      - export_files:/app/files
+    depends_on:
+      - postgres
+      - redis
+
+  advisor:
+    build: ./advisor-service
+    restart: always
+    ports:
+      - "8005:8005"
+    env_file: ./advisor-service/.env.docker
+    depends_on:
+      - postgres
+
+  schedule:
+    build: ./schedule-service
+    restart: always
+    ports:
+      - "8006:8006"
+    env_file: ./schedule-service/.env.docker
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  pg_data:
+  export_files:

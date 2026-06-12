@@ -1,0 +1,9 @@
+Django>=6.0
+psycopg2==2.9.9
+redis==5.0.8
+requests==2.32.3
+python-dotenv==1.0.1
+Pillow==10.4.0
+django-taggit==6.1.0
+django-markdownx==4.0.2
+anthropic>=0.40.0
